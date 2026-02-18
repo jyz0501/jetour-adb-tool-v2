@@ -1,0 +1,37 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      
+    - name: Check HTML files
+      run: |
+        echo "Checking HTML files..."
+        find . -name "*.html" -type f | head -10
+        
+    - name: Check CSS files
+      run: |
+        echo "Checking CSS files..."
+        find . -name "*.css" -type f | head -10
+        
+    - name: Check JavaScript files
+      run: |
+        echo "Checking JavaScript files..."
+        find . -name "*.js" -type f | head -10
+        
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: .
+        publish_branch: gh-pages
+        force_orphan: true

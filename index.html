@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>捷途大伦哥的应用管家</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h3>安装方式一：手机App方式</h3>
+        <a href="https://adb.cheji.cc/apk/sj.apk" class="btn adb-btn" style="margin-bottom: 20px;" target="_blank">手机助手下载</a>
+        
+        <hr style="margin: 20px 0; border: 1px solid #eee;">
+        
+        <h3>安装方式二：WebUSB方式</h3>
+        <div class="warning" id="usb-warning">
+            注意！您的浏览器不支持 WebUSB<br>
+            手机/笔记本 请在Edge浏览器中打开
+        </div>
+        
+        <div class="browser-info">
+            Edge浏览器下载地址 <a href="https://www.microsoft.com/zh-cn/edge/download" target="_blank">点击下载</a>
+        </div>
+        
+        <button class="btn btn-connect" id="connect-btn" onclick="connect()">连接设备</button>
+        <button class="btn btn-disconnect" id="disconnect-btn" onclick="disconnect()">断开连接</button>
+        
+        <div class="status">
+            当前设备：<span id="device-status">未连接</span>
+        </div>
+        
+        <div class="tip">
+            请使用专用OTG线，普通数据线不可以；如遇连接不成功，尝试拔插数据线多连接几次。
+        </div>
+        
+        <hr style="margin: 20px 0; border: 1px solid #eee;">
+        
+        <div class="adb-section">
+            <div class="adb-tip">
+                点击下面按钮 一键安装软件
+            </div>
+            
+            <div class="adb-buttons">
+                <button class="btn adb-btn" onclick="xnfhj()">虚拟返回键</button>
+                <button class="btn adb-btn" onclick="yjql()">一键清理</button>
+                <button class="btn adb-btn" onclick="sfgj()">沙发管家HD</button>
+                <br>
+                <button class="btn adb-btn" onclick="ahyygj()">大伦应用管家</button>
+                <button class="btn adb-btn" onclick="qxg()">权限狗</button>
+                <button class="btn adb-btn" onclick="wzagl()">无障碍管理器</button>
+                <br>
+                <button class="btn adb-btn" onclick="fhcdj()">返回菜单键</button>
+                <button class="btn adb-btn" onclick="qzm()">氢桌面</button>
+                <button class="btn adb-btn" onclick="wifiAdb(true)">开启无线ADB</button>
+                <br>
+                <button class="btn adb-btn" onclick="jhyygj()">激活大伦车机助手</button>
+                <button class="btn adb-btn" onclick="jcwlxz()">解除网络限制</button>
+                <button class="btn adb-btn" onclick="jcazxz()">解除安装限制</button>
+                <br>
+                <button class="btn adb-btn" onclick="loadPackageList()">查看已安装应用</button>
+                <button class="btn adb-btn" onclick="loadApkFile()">安装本地APK</button>
+            </div>
+            
+            <div class="adb-port">
+                <input type="text" id="tcpip" value="5555" placeholder="输入ADB端口">
+                <button class="btn btn-connect" id="start-adb-btn" onclick="wifiAdb(true)">开启</button>
+            </div>
+        </div>
+        
+        <!-- APK File Upload -->
+        <div style="margin: 20px 0;">
+            <input type="file" id="apkFile" multiple accept=".apk" style="display: none;">
+            <button class="btn btn-connect" onclick="loadApkFile()">选择APK文件</button>
+            <span id="apkFileName">未选择文件</span>
+            <button class="btn btn-connect" onclick="installApkFile()">安装所选APK</button>
+        </div>
+        
+        <!-- Shell Command Input -->
+        <div style="margin: 20px 0;">
+            <input type="text" id="shell" placeholder="输入ADB命令" style="width: 100%; padding: 8px;">
+            <button class="btn btn-connect" onclick="exec_command()">执行命令</button>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress" id="progress">
+            <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+        </div>
+        
+        <!-- Log Area -->
+        <div id="exec-result">
+            <h4>执行结果</h4>
+            <div id="log"></div>
+        </div>
+        
+        <!-- App List -->
+        <div style="margin: 20px 0;">
+            <h4>已安装应用</h4>
+            <table id="package-list">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>包名</th>
+                        <th>操作</th>
+                        <th>卸载</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 应用列表将通过JavaScript动态添加 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Toasts -->
+    <div class="toast" id="downloading-toast">
+        <div>正在下载，请稍候...</div>
+        <div id="download-progress">
+            <div id="download-progress-bar"></div>
+        </div>
+        <div id="download-progress-text">0%</div>
+    </div>
+    
+    <div class="toast" id="success-toast">
+        设备连接成功！
+    </div>
+    
+    <!-- ADB.js Library (CDN版本) -->
+    <script src="https://cdn.jsdelivr.net/npm/adbjs@latest"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/utils.js"></script>
+    <script src="js/device.js"></script>
+    <script src="js/apps.js"></script>
+    <script src="js/system.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
