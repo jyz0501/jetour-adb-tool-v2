@@ -160,12 +160,23 @@ function checkWebUSBSupport() {
     return false;
 }
 
-// 显示 Edge 浏览器下载弹窗
+// 显示浏览器下载弹窗
 function showEdgeDownloadPopup() {
-    const popup = confirm('您的浏览器不支持 WebUSB，请使用 Microsoft Edge 浏览器。\n\n是否立即下载 Edge 浏览器？');
-    if (popup) {
-        window.open('https://www.microsoft.com/zh-cn/edge/download', '_blank');
-    }
+    const content = '您的浏览器不支持 WebUSB，请使用以下浏览器：<br><br>' +
+                    '<a href="https://www.microsoft.com/zh-cn/edge/download" target="_blank">1. Microsoft Edge 浏览器</a><br>' +
+                    '<a href="https://www.google.com/chrome/downloads/" target="_blank">2. Google Chrome 浏览器</a><br><br>' +
+                    '点击上方链接直接下载，或点击下方按钮选择浏览器下载。';
+    
+    showModal('浏览器支持提示', content, {
+        showCancel: true,
+        cancelText: '取消',
+        confirmText: '下载 Edge',
+        callback: function(confirmed) {
+            if (confirmed) {
+                window.open('https://www.microsoft.com/zh-cn/edge/download', '_blank');
+            }
+        }
+    });
 }
 
 // 导出函数
@@ -183,4 +194,89 @@ try {
     }
 } catch (e) {
     // 浏览器环境，不需要导出
+}
+
+// 自定义弹窗功能
+let modalCallback = null;
+
+// 显示自定义弹窗
+function showModal(title, content, options = {}) {
+    const modal = document.getElementById('customModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalFooter = document.getElementById('modalFooter');
+    
+    if (!modal || !modalTitle || !modalBody || !modalFooter) {
+        console.error('Modal elements not found');
+        return;
+    }
+    
+    // 设置标题和内容
+    modalTitle.textContent = title;
+    modalBody.innerHTML = content; // 使用innerHTML支持HTML内容
+    
+    // 设置按钮
+    const defaultOptions = {
+        showCancel: true,
+        cancelText: '取消',
+        confirmText: '确定',
+        cancelClass: 'custom-modal-btn-secondary',
+        confirmClass: 'custom-modal-btn-primary',
+        callback: null
+    };
+    
+    const finalOptions = { ...defaultOptions, ...options };
+    modalCallback = finalOptions.callback;
+    
+    // 构建按钮
+    modalFooter.innerHTML = '';
+    
+    if (finalOptions.showCancel) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = `custom-modal-btn ${finalOptions.cancelClass}`;
+        cancelBtn.textContent = finalOptions.cancelText;
+        cancelBtn.onclick = closeModal;
+        modalFooter.appendChild(cancelBtn);
+    }
+    
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = `custom-modal-btn ${finalOptions.confirmClass}`;
+    confirmBtn.textContent = finalOptions.confirmText;
+    confirmBtn.onclick = confirmModal;
+    modalFooter.appendChild(confirmBtn);
+    
+    // 显示弹窗
+    modal.style.display = 'block';
+}
+
+// 关闭弹窗
+function closeModal() {
+    const modal = document.getElementById('customModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    modalCallback = null;
+}
+
+// 确认弹窗
+function confirmModal() {
+    if (typeof modalCallback === 'function') {
+        modalCallback(true);
+    }
+    closeModal();
+}
+
+// 显示带超链接的提示
+function showAlertWithLinks(title, content) {
+    showModal(title, content, {
+        showCancel: false,
+        confirmText: '我知道了'
+    });
+}
+
+// 显示确认对话框
+function showConfirmWithLinks(title, content, callback) {
+    showModal(title, content, {
+        callback: callback
+    });
 }

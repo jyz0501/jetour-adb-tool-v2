@@ -5,53 +5,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>捷途大伦哥的应用管家</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- 自定义弹窗样式 -->
+    <style>
+        /* 自定义弹窗样式 */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .custom-modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .custom-modal-header {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .custom-modal-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .custom-modal-body {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .custom-modal-body a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .custom-modal-body a:hover {
+            text-decoration: underline;
+        }
+        
+        .custom-modal-footer {
+            text-align: right;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .custom-modal-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .custom-modal-btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .custom-modal-btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .custom-modal-btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .custom-modal-btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <div style="margin: 20px 0; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden;">
-            <div style="background-color: #e3f2fd; padding: 10px 15px; border-bottom: 1px solid #dee2e6;">
-                <h3 style="margin: 0; font-size: 16px;">安装方式一：手机App方式</h3>
-            </div>
-            <div style="padding: 15px; background-color: white;">
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <a href="https://adb.cheji.cc/apk/sj.apk" class="btn btn-connect" style="flex-shrink: 0;" target="_blank">手机助手下载</a>
-                    <a href="https://file.vju.cc/%E5%BA%94%E7%94%A8%E7%AE%A1%E5%AE%B6/%E5%BA%94%E7%94%A8%E7%AE%A1%E5%AE%B61.8.0%E5%85%AC%E7%AD%BE%E7%89%88.apk" class="btn btn-connect" style="flex-shrink: 0;" target="_blank">应用管家下载</a>
-                </div>
+        <!-- 安装方式一：手机App方式 -->
+        <div style="margin: 10px 0;">
+            <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #333;">安装方式一：手机App方式</h3>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <a href="https://adb.cheji.cc/apk/sj.apk" class="btn btn-connect" style="flex-shrink: 0;" target="_blank">手机助手下载</a>
+                <a href="https://file.vju.cc/%E5%BA%94%E7%94%A8%E7%AE%A1%E5%AE%B6/%E5%BA%94%E7%94%A8%E7%AE%A1%E5%AE%B61.8.0%E5%85%AC%E7%AD%BE%E7%89%88.apk" class="btn btn-connect" style="flex-shrink: 0;" target="_blank">应用管家下载</a>
             </div>
         </div>
         
-        <hr style="margin: 20px 0; border: 1px solid #eee;">
+        <hr style="margin: 15px 0; border: 1px solid #eee;">
         
-        <div style="margin: 20px 0; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden;">
-            <div style="background-color: #e3f2fd; padding: 10px 15px; border-bottom: 1px solid #dee2e6;">
-                <h3 style="margin: 0; font-size: 16px;">安装方式二：WebUSB方式</h3>
+        <!-- 安装方式二：WebUSB方式 -->
+        <div style="margin: 10px 0;">
+            <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #333;">安装方式二：WebUSB方式</h3>
+            <div class="warning" id="usb-warning">
+                注意！您的浏览器不支持WebUSB。<br>
+                请在Edge浏览器中打开
             </div>
-            <div style="padding: 15px; background-color: white;">
-                <div class="warning" id="usb-warning">
-                    注意！您的浏览器不支持WebUSB。<br>
-                    请在Edge浏览器中打开
-                </div>
-                
-                <!-- Edge浏览器下载地址已隐藏，将在检测到非支持浏览器时弹窗显示 -->
-                
-                <div style="margin: 20px 0;">
-                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                        <button class="btn btn-connect" id="connect-btn" onclick="connect()" style="background-color: #28a745; color: white;">连接设备</button>
-                        <button class="btn btn-disconnect" id="disconnect-btn" onclick="disconnect()" style="background-color: #dc3545; color: white;">断开连接</button>
-                        <div style="flex: 1; text-align: right;">
-                            <span style="margin-right: 8px;">🚗 当前设备：</span>
-                            <span id="device-status" style="font-weight: bold;">未连接</span>
-                        </div>
-                    </div>
-                    <p style="font-size: 12px; color: #6c757d; margin: 0;">
-                        如显示"找不到兼容设备"，请重新拔插OTG线的车机端的USB口 或 检查adb通道是否被其它占用。
-                    </p>
-                    <!-- 设备情况日志 -->
-                    <div style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px; font-family: monospace; max-height: 100px; overflow-y: auto;">
-                        <div style="font-weight: bold; margin-bottom: 5px; color: #333;">设备情况日志：</div>
-                        <div id="device-log" style="white-space: pre-wrap;">正在初始化...</div>
+            
+            <!-- Edge浏览器下载地址已隐藏，将在检测到非支持浏览器时弹窗显示 -->
+            
+            <div style="margin: 15px 0;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                    <button class="btn btn-connect" id="connect-btn" onclick="connect()" style="background-color: #28a745; color: white;">连接设备</button>
+                    <button class="btn btn-disconnect" id="disconnect-btn" onclick="disconnect()" style="background-color: #dc3545; color: white;">断开连接</button>
+                    <div style="flex: 1; text-align: right;">
+                        <span style="margin-right: 8px;">🚗 </span>
+                        <span id="device-status" style="font-weight: bold;">未连接</span>
                     </div>
                 </div>
+                <p style="font-size: 12px; color: #6c757d; margin: 0;">
+                    如显示"找不到兼容设备"，请重新拔插OTG线的车机端的USB口 或 检查adb通道是否被其它占用。
+                </p>
+                <!-- 设备情况日志 -->
+                <div style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px; font-family: monospace; max-height: 100px; overflow-y: auto;">
+                    <div style="font-weight: bold; margin-bottom: 5px; color: #333;">设备情况日志：</div>
+                    <div id="device-log" style="white-space: pre-wrap;">正在初始化...</div>
+                </div>
+            </div>
                 
                 <hr style="margin: 20px 0; border: 1px solid #eee;">
                 
@@ -145,6 +226,22 @@
     
     <div class="toast" id="success-toast">
         设备连接成功！
+    </div>
+    
+    <!-- 自定义弹窗 -->
+    <div id="customModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="custom-modal-header">
+                <h4 class="custom-modal-title" id="modalTitle">提示</h4>
+            </div>
+            <div class="custom-modal-body" id="modalBody">
+                弹窗内容
+            </div>
+            <div class="custom-modal-footer" id="modalFooter">
+                <button class="custom-modal-btn custom-modal-btn-secondary" onclick="closeModal()">取消</button>
+                <button class="custom-modal-btn custom-modal-btn-primary" onclick="confirmModal()">确定</button>
+            </div>
+        </div>
     </div>
     
     <!-- ADB 核心模块 -->
