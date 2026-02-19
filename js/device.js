@@ -133,31 +133,44 @@ let showDeviceSelection = (devices) => {
             return;
         }
         
-        let message = '请选择要连接的设备:\n\n';
+        // 创建设备选择内容
+        let content = '<div style="max-height: 300px; overflow-y: auto;">';
         devices.forEach((device, index) => {
+            let deviceInfo = '';
             if (device.type === 'WebUSB') {
-                message += `${index + 1}. WebUSB 设备: ${device.name} (VID: ${device.vendorId}, PID: ${device.productId})\n`;
+                deviceInfo = `WebUSB 设备: ${device.name} (VID: ${device.vendorId}, PID: ${device.productId})`;
             } else if (device.type === 'Network') {
-                message += `${index + 1}. 网络设备: ${device.name}\n`;
+                deviceInfo = `网络设备: ${device.name}`;
+            }
+            
+            content += `<div style="padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;" onclick="selectDevice(${index})">`;
+            content += `<div style="font-weight: bold;">${deviceInfo}</div>`;
+            content += '</div>';
+        });
+        content += '</div>';
+        
+        // 添加设备选择函数到全局
+        window.selectDevice = (index) => {
+            resolve(devices[index]);
+            closeModal();
+            delete window.selectDevice;
+        };
+        
+        // 显示自定义弹窗
+        showModal('选择设备', content, {
+            showCancel: true,
+            cancelText: '取消',
+            confirmText: '刷新设备',
+            callback: function(confirmed) {
+                if (!confirmed) {
+                    reject(new Error('User canceled'));
+                } else {
+                    // 刷新设备列表
+                    reject(new Error('Refresh devices'));
+                }
+                delete window.selectDevice;
             }
         });
-        
-        message += '\n输入设备编号 (按取消取消连接):';
-        
-        let input = prompt(message, '1');
-        if (input === null) {
-            reject(new Error('User canceled'));
-            return;
-        }
-        
-        const selectedIndex = parseInt(input) - 1;
-        if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= devices.length) {
-            alert('无效的设备编号');
-            reject(new Error('Invalid device index'));
-            return;
-        }
-        
-        resolve(devices[selectedIndex]);
     });
 };
 
@@ -224,7 +237,14 @@ let connect = async () => {
         if (error.message && error.message.indexOf('Authentication required') != -1) {
             alert('需要在设备上允许 ADB 调试');
             logDevice('需要在设备上允许 ADB 调试');
-        } else if (error.message && error.message.indexOf('User canceled') == -1) {
+        } else if (error.message && error.message.indexOf('User canceled') != -1) {
+            // 用户取消连接，不显示错误
+            logDevice('用户取消连接');
+        } else if (error.message && error.message.indexOf('Refresh devices') != -1) {
+            // 用户点击了刷新设备，重新执行连接流程
+            logDevice('用户请求刷新设备列表');
+            connect();
+        } else {
             alert('连接失败，请断开重新尝试。');
         }
     }
