@@ -28,8 +28,8 @@
             </div>
             <div style="padding: 15px; background-color: white;">
                 <div class="warning" id="usb-warning">
-                    注意！您的浏览器不支持 WebUSB<br>
-                    手机/笔记本 请在Edge浏览器中打开
+                    注意！您的浏览器不支持WebUSB。<br>
+                    请在Edge浏览器中打开
                 </div>
                 
                 <!-- Edge浏览器下载地址已隐藏，将在检测到非支持浏览器时弹窗显示 -->
@@ -46,6 +46,11 @@
                     <p style="font-size: 12px; color: #6c757d; margin: 0;">
                         如显示"找不到兼容设备"，请重新拔插OTG线的车机端的USB口 或 检查adb通道是否被其它占用。
                     </p>
+                    <!-- 设备情况日志 -->
+                    <div style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; font-size: 12px; font-family: monospace; max-height: 100px; overflow-y: auto;">
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #333;">设备情况日志：</div>
+                        <div id="device-log" style="white-space: pre-wrap;">正在初始化...</div>
+                    </div>
                 </div>
                 
                 <hr style="margin: 20px 0; border: 1px solid #eee;">

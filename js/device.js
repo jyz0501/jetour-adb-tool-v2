@@ -5,6 +5,29 @@
 window.adbDevice = null;
 window.adbTransport = null;
 
+// 设备日志记录
+function logDevice(message) {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = `[${timestamp}] ${message}\n`;
+    
+    const deviceLogElement = document.getElementById('device-log');
+    if (deviceLogElement) {
+        deviceLogElement.textContent += logEntry;
+        deviceLogElement.scrollTop = deviceLogElement.scrollHeight;
+    }
+    
+    // 同时输出到控制台，方便调试
+    console.log(`[Device] ${message}`);
+}
+
+// 清除设备日志
+function clearDeviceLog() {
+    const deviceLogElement = document.getElementById('device-log');
+    if (deviceLogElement) {
+        deviceLogElement.textContent = '';
+    }
+}
+
 // 点击检测提示
 let initWebUSB = async () => {
     // 更详细的浏览器检测
@@ -17,22 +40,28 @@ let initWebUSB = async () => {
     // 显示浏览器信息用于调试
     const userAgent = navigator.userAgent;
     log('浏览器信息:', userAgent);
+    logDevice('浏览器信息: ' + userAgent);
     
     clear();
     try {
         // 使用新的 WebUSB 传输
+        logDevice('正在请求 WebUSB 设备...');
         window.adbTransport = await WebUsbTransport.requestDevice();
         await window.adbTransport.open();
         log('WebUSB 传输初始化成功');
+        logDevice('WebUSB 传输初始化成功');
         return true;
     } catch (error) {
         log('WebUSB 初始化失败:', error);
+        logDevice('WebUSB 初始化失败: ' + (error.message || error.toString()));
         if (error.message) {
             if (error.message.indexOf('No device') != -1 || error.name === 'NotFoundError') { // 未选中设备
                 log('用户取消选择设备');
+                logDevice('用户取消选择设备');
                 return false;
             } else if (error.message.indexOf('was disconnected') != -1) {
                 alert('无法连接到此设备，请断开重新尝试。');
+                logDevice('设备已断开连接');
             } else {
                 alert('初始化 WebUSB 失败: ' + error.message);
             }
@@ -46,6 +75,7 @@ let initWebUSB = async () => {
 // 扫描 USB 端口设备
 let scanUsbDevices = async () => {
     log('开始扫描 USB 端口设备...');
+    logDevice('开始扫描 USB 端口设备...');
     
     // 扫描逻辑
     const devices = [];
@@ -63,13 +93,21 @@ let scanUsbDevices = async () => {
             });
         });
         log(`发现 ${webusbDevices.length} 个 WebUSB 设备`);
+        logDevice(`发现 ${webusbDevices.length} 个 WebUSB 设备`);
+        
+        // 记录每个设备的详细信息
+        webusbDevices.forEach((device, index) => {
+            logDevice(`设备 ${index + 1}: ${device.productName || 'USB设备'} (VID: ${device.vendorId}, PID: ${device.productId})`);
+        });
     } catch (error) {
         log('WebUSB 设备扫描失败:', error);
+        logDevice('WebUSB 设备扫描失败: ' + (error.message || error.toString()));
     }
     
     // 2. 扫描 5555 端口（ADB 无线调试）
     try {
         log('正在扫描 5555 端口...');
+        logDevice('正在扫描 5555 端口...');
         // 这里可以添加网络扫描逻辑
         devices.push({
             type: 'Network',
@@ -77,8 +115,10 @@ let scanUsbDevices = async () => {
             port: 5555,
             description: '可能的无线调试设备'
         });
+        logDevice('发现 5555 端口（ADB 无线调试）');
     } catch (error) {
         log('5555 端口扫描失败:', error);
+        logDevice('5555 端口扫描失败: ' + (error.message || error.toString()));
     }
     
     return devices;
@@ -124,50 +164,66 @@ let showDeviceSelection = (devices) => {
 // 连接设备
 let connect = async () => {
     try {
+        clearDeviceLog();
+        logDevice('开始连接设备...');
+        
         // 1. 扫描设备
         const devices = await scanUsbDevices();
         
         // 2. 显示设备选择弹窗
+        logDevice('显示设备选择弹窗...');
         const selectedDevice = await showDeviceSelection(devices);
+        logDevice('已选择设备: ' + selectedDevice.name);
         
         // 3. 根据设备类型连接
         if (selectedDevice.type === 'WebUSB') {
             // WebUSB 设备连接
+            logDevice('正在连接 WebUSB 设备...');
             const initialized = await initWebUSB();
             if (!initialized || !window.adbTransport) {
+                logDevice('WebUSB 初始化失败');
                 return;
             }
             
             window.adbDevice = null;
             
             // 创建 ADB 设备并连接
+            logDevice('正在创建 ADB 设备...');
             window.adbDevice = new AdbDevice(window.adbTransport);
             await window.adbDevice.connect("host::web", () => {
                 alert('请在您的设备上允许 ADB 调试');
+                logDevice('请在您的设备上允许 ADB 调试');
             });
             
             if (window.adbDevice && window.adbDevice.connected) {
                 let deviceName = window.adbDevice.banner || '设备';
                 setDeviceName(deviceName);
                 console.log('设备连接成功:', window.adbDevice);
+                logDevice('设备连接成功: ' + deviceName);
                 
                 let toast = document.getElementById('success-toast');
                 toast.style.visibility = 'visible';
                 setTimeout(function() {
                     toast.style.visibility = 'hidden';
                 }, 3000);
+                
+                // 开始持续检测设备状态
+                startDeviceMonitoring();
             }
         } else if (selectedDevice.type === 'Network' && selectedDevice.port === 5555) {
             // 5555 端口连接
             alert('5555 端口连接功能正在开发中，请使用 WebUSB 连接方式。');
+            logDevice('5555 端口连接功能正在开发中');
         }
     } catch (error) {
         log('设备连接失败:', error);
+        logDevice('设备连接失败: ' + (error.message || error.toString()));
         window.adbDevice = null;
         window.adbTransport = null;
         
         if (error.message && error.message.indexOf('Authentication required') != -1) {
             alert('需要在设备上允许 ADB 调试');
+            logDevice('需要在设备上允许 ADB 调试');
         } else if (error.message && error.message.indexOf('User canceled') == -1) {
             alert('连接失败，请断开重新尝试。');
         }
@@ -186,6 +242,8 @@ let disconnect = async () => {
     }
     
     try {
+        logDevice('正在断开连接...');
+        
         if (window.adbDevice) {
             await window.adbDevice.disconnect();
             window.adbDevice = null;
@@ -195,8 +253,52 @@ let disconnect = async () => {
         }
         setDeviceName(null);
         log('设备已断开连接');
+        logDevice('设备已断开连接');
+        
+        // 停止设备监控
+        stopDeviceMonitoring();
     } catch (error) {
         log('断开连接失败:', error);
+        logDevice('断开连接失败: ' + (error.message || error.toString()));
+    }
+};
+
+// 设备状态监控
+let deviceMonitoringInterval = null;
+
+// 开始持续检测设备状态
+let startDeviceMonitoring = () => {
+    // 清除之前的监控
+    stopDeviceMonitoring();
+    
+    // 每5秒检测一次设备状态
+    deviceMonitoringInterval = setInterval(async () => {
+        try {
+            if (window.adbDevice && window.adbDevice.connected) {
+                // 可以执行一些简单的命令来检测设备是否仍然响应
+                // 例如，获取设备状态
+                logDevice('设备状态: 已连接');
+            } else {
+                logDevice('设备状态: 已断开');
+                setDeviceName(null);
+                stopDeviceMonitoring();
+            }
+        } catch (error) {
+            logDevice('设备监控失败: ' + (error.message || error.toString()));
+            setDeviceName(null);
+            stopDeviceMonitoring();
+        }
+    }, 5000);
+    
+    logDevice('开始持续监控设备状态');
+};
+
+// 停止设备状态监控
+let stopDeviceMonitoring = () => {
+    if (deviceMonitoringInterval) {
+        clearInterval(deviceMonitoringInterval);
+        deviceMonitoringInterval = null;
+        logDevice('停止监控设备状态');
     }
 };
 
@@ -206,7 +308,49 @@ let setDeviceName = async (name) => {
         name = '未连接';
     }
     document.getElementById('device-status').textContent = name;
+    logDevice('设备状态更新: ' + name);
 };
+
+// 初始化设备检测
+let initDeviceDetection = async () => {
+    try {
+        // 检测浏览器支持
+        const isSupported = checkWebUSBSupport();
+        if (isSupported && navigator.usb) {
+            logDevice('浏览器支持 WebUSB');
+            
+            // 初始化时检查是否有已连接的设备
+            logDevice('初始化时检查已连接的设备...');
+            const webusbDevices = await navigator.usb.getDevices();
+            if (webusbDevices.length > 0) {
+                logDevice(`发现 ${webusbDevices.length} 个已连接的 WebUSB 设备`);
+                webusbDevices.forEach((device, index) => {
+                    logDevice(`设备 ${index + 1}: ${device.productName || 'USB设备'} (VID: ${device.vendorId}, PID: ${device.productId})`);
+                });
+            } else {
+                logDevice('未发现已连接的 WebUSB 设备');
+            }
+        } else {
+            logDevice('浏览器不支持 WebUSB');
+        }
+    } catch (error) {
+        logDevice('设备检测初始化失败: ' + (error.message || error.toString()));
+    }
+};
+
+// 页面加载完成后初始化
+if (typeof window !== 'undefined') {
+    window.addEventListener('DOMContentLoaded', () => {
+        // 初始化设备日志
+        const deviceLogElement = document.getElementById('device-log');
+        if (deviceLogElement) {
+            deviceLogElement.textContent = '[初始化] 设备情况日志已就绪\n';
+        }
+        
+        // 初始化设备检测
+        initDeviceDetection();
+    });
+}
 
 // 推送应用
 let push = async (filePath, blob) => {

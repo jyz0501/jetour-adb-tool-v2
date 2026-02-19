@@ -99,20 +99,9 @@ function checkWebUSBSupport() {
     // 高级浏览器检测
     const userAgent = navigator.userAgent;
     
-    // Chrome 浏览器
-    if (userAgent.indexOf('Chrome') > -1 && userAgent.indexOf('Edg') === -1) {
-        const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
-        if (chromeMatch) {
-            const chromeVersion = parseInt(chromeMatch[1]);
-            if (chromeVersion >= 61) {
-                document.getElementById('usb-warning').style.display = 'none';
-                return true;
-            }
-        }
-    }
-    
-    // Edge 浏览器
+    // Edge 浏览器（优先检测）
     if (userAgent.indexOf('Edg') > -1) {
+        // 尝试匹配版本号，支持多种格式
         const edgeMatch = userAgent.match(/Edg\/(\d+)/);
         if (edgeMatch) {
             const edgeVersion = parseInt(edgeMatch[1]);
@@ -120,6 +109,26 @@ function checkWebUSBSupport() {
                 document.getElementById('usb-warning').style.display = 'none';
                 return true;
             }
+        } else {
+            // 如果版本号匹配失败但确实是Edge浏览器，也认为支持
+            document.getElementById('usb-warning').style.display = 'none';
+            return true;
+        }
+    }
+    
+    // Chrome 浏览器
+    if (userAgent.indexOf('Chrome') > -1) {
+        const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+        if (chromeMatch) {
+            const chromeVersion = parseInt(chromeMatch[1]);
+            if (chromeVersion >= 61) {
+                document.getElementById('usb-warning').style.display = 'none';
+                return true;
+            }
+        } else {
+            // 如果版本号匹配失败但确实是Chrome浏览器，也认为支持
+            document.getElementById('usb-warning').style.display = 'none';
+            return true;
         }
     }
     
@@ -132,7 +141,17 @@ function checkWebUSBSupport() {
                 document.getElementById('usb-warning').style.display = 'none';
                 return true;
             }
+        } else {
+            // 如果版本号匹配失败但确实是Opera浏览器，也认为支持
+            document.getElementById('usb-warning').style.display = 'none';
+            return true;
         }
+    }
+    
+    // 如果支持 WebUSB API，即使浏览器检测失败也认为支持
+    if ('usb' in navigator) {
+        document.getElementById('usb-warning').style.display = 'none';
+        return true;
     }
     
     // 其他浏览器
