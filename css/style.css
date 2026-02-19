@@ -76,24 +76,28 @@ a:hover {
 
 /* ADB Section Styles */
 .adb-section {
-    margin-top: 20px;
+    margin: 20px 0;
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
 }
 
 .adb-tip {
     font-size: 14px;
-    color: #666;
+    color: #333;
     margin-bottom: 15px;
+    font-weight: bold;
 }
 
 .adb-buttons {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     line-height: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.adb-buttons br {
-    line-height: 10px;
-    margin-bottom: 5px;
-}
+
 
 .adb-btn {
     background-color: #4caf50;

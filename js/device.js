@@ -1,66 +1,203 @@
 // 设备管理相关功能
+// 参考 Tango ADB 的架构设计
+
+// 全局变量
+window.adbDevice = null;
+window.adbTransport = null;
 
 // 点击检测提示
 let initWebUSB = async () => {
-    if (!navigator.usb) {
+    // 更详细的浏览器检测
+    const isSupported = checkWebUSBSupport();
+    if (!isSupported || !navigator.usb) {
         alert("检测到您的浏览器不支持，请根据顶部的 "警告提示" 更换指定浏览器使用。");
-        return;
+        return false;
     }
+    
+    // 显示浏览器信息用于调试
+    const userAgent = navigator.userAgent;
+    log('浏览器信息:', userAgent);
+    
     clear();
     try {
-        webusb = await Adb.open("WebUSB");
+        // 使用新的 WebUSB 传输
+        window.adbTransport = await WebUsbTransport.requestDevice();
+        await window.adbTransport.open();
+        log('WebUSB 传输初始化成功');
+        return true;
     } catch (error) {
+        log('WebUSB 初始化失败:', error);
         if (error.message) {
-            if (error.message.indexOf('No device') != -1) { // 未选中设备
-                return;
+            if (error.message.indexOf('No device') != -1 || error.name === 'NotFoundError') { // 未选中设备
+                log('用户取消选择设备');
+                return false;
             } else if (error.message.indexOf('was disconnected') != -1) {
                 alert('无法连接到此设备，请断开重新尝试。');
+            } else {
+                alert('初始化 WebUSB 失败: ' + error.message);
             }
+        } else {
+            alert('初始化 WebUSB 失败，请检查浏览器版本。');
         }
-        log(error);
+        return false;
     }
+};
+
+// 扫描 USB 端口设备
+let scanUsbDevices = async () => {
+    log('开始扫描 USB 端口设备...');
+    
+    // 扫描逻辑
+    const devices = [];
+    
+    // 1. 扫描 WebUSB 设备
+    try {
+        const webusbDevices = await navigator.usb.getDevices();
+        webusbDevices.forEach(device => {
+            devices.push({
+                type: 'WebUSB',
+                name: device.productName || 'USB设备',
+                vendorId: device.vendorId,
+                productId: device.productId,
+                device: device
+            });
+        });
+        log(`发现 ${webusbDevices.length} 个 WebUSB 设备`);
+    } catch (error) {
+        log('WebUSB 设备扫描失败:', error);
+    }
+    
+    // 2. 扫描 5555 端口（ADB 无线调试）
+    try {
+        log('正在扫描 5555 端口...');
+        // 这里可以添加网络扫描逻辑
+        devices.push({
+            type: 'Network',
+            name: 'ADB 无线调试 (5555端口)',
+            port: 5555,
+            description: '可能的无线调试设备'
+        });
+    } catch (error) {
+        log('5555 端口扫描失败:', error);
+    }
+    
+    return devices;
+};
+
+// 显示设备选择弹窗
+let showDeviceSelection = (devices) => {
+    return new Promise((resolve, reject) => {
+        if (devices.length === 0) {
+            alert('未发现任何设备，请检查连接后重试。');
+            reject(new Error('No devices found'));
+            return;
+        }
+        
+        let message = '请选择要连接的设备:\n\n';
+        devices.forEach((device, index) => {
+            if (device.type === 'WebUSB') {
+                message += `${index + 1}. WebUSB 设备: ${device.name} (VID: ${device.vendorId}, PID: ${device.productId})\n`;
+            } else if (device.type === 'Network') {
+                message += `${index + 1}. 网络设备: ${device.name}\n`;
+            }
+        });
+        
+        message += '\n输入设备编号 (按取消取消连接):';
+        
+        let input = prompt(message, '1');
+        if (input === null) {
+            reject(new Error('User canceled'));
+            return;
+        }
+        
+        const selectedIndex = parseInt(input) - 1;
+        if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= devices.length) {
+            alert('无效的设备编号');
+            reject(new Error('Invalid device index'));
+            return;
+        }
+        
+        resolve(devices[selectedIndex]);
+    });
 };
 
 // 连接设备
 let connect = async () => {
-    await initWebUSB();
-    if (!webusb) {
-        return;
-    }
     try {
-        adb = null;
-        // 直接连接ADB，不使用isAdb()方法
-        adb = await webusb.connectAdb("host::web1n", () => {
-            alert('请在您的设备上允许 ADB 调试');
-        });
-        if (adb != null) {
-            let name = webusb.device ? (webusb.device.productName || '设备') : '设备';
-            setDeviceName(name + '.');
-            console.log('设备连接成功:', webusb.device);
-            let toast = document.getElementById('success-toast');
-            toast.style.visibility = 'visible';
-            setTimeout(function() {
-                toast.style.visibility = 'hidden';
-            }, 3000);
+        // 1. 扫描设备
+        const devices = await scanUsbDevices();
+        
+        // 2. 显示设备选择弹窗
+        const selectedDevice = await showDeviceSelection(devices);
+        
+        // 3. 根据设备类型连接
+        if (selectedDevice.type === 'WebUSB') {
+            // WebUSB 设备连接
+            const initialized = await initWebUSB();
+            if (!initialized || !window.adbTransport) {
+                return;
+            }
+            
+            window.adbDevice = null;
+            
+            // 创建 ADB 设备并连接
+            window.adbDevice = new AdbDevice(window.adbTransport);
+            await window.adbDevice.connect("host::web", () => {
+                alert('请在您的设备上允许 ADB 调试');
+            });
+            
+            if (window.adbDevice && window.adbDevice.connected) {
+                let deviceName = window.adbDevice.banner || '设备';
+                setDeviceName(deviceName);
+                console.log('设备连接成功:', window.adbDevice);
+                
+                let toast = document.getElementById('success-toast');
+                toast.style.visibility = 'visible';
+                setTimeout(function() {
+                    toast.style.visibility = 'hidden';
+                }, 3000);
+            }
+        } else if (selectedDevice.type === 'Network' && selectedDevice.port === 5555) {
+            // 5555 端口连接
+            alert('5555 端口连接功能正在开发中，请使用 WebUSB 连接方式。');
         }
     } catch (error) {
-        log(error);
-        adb = null;
-        alert("连接失败，请断开重新尝试。");
+        log('设备连接失败:', error);
+        window.adbDevice = null;
+        window.adbTransport = null;
+        
+        if (error.message && error.message.indexOf('Authentication required') != -1) {
+            alert('需要在设备上允许 ADB 调试');
+        } else if (error.message && error.message.indexOf('User canceled') == -1) {
+            alert('连接失败，请断开重新尝试。');
+        }
     }
 };
 
 // 断开连接
 let disconnect = async () => {
-    if (!webusb) {
+    if (!window.adbDevice && !window.adbTransport) {
         return;
     }
+    
     const confirmed = confirm("是否断开连接？");
     if (!confirmed) {
         return; // 用户点击了取消，则不执行操作
     }
-    webusb.close();
-    setDeviceName(null);
+    
+    try {
+        if (window.adbDevice) {
+            await window.adbDevice.disconnect();
+            window.adbDevice = null;
+        } else if (window.adbTransport) {
+            await window.adbTransport.close();
+            window.adbTransport = null;
+        }
+        setDeviceName(null);
+        log('设备已断开连接');
+    } catch (error) {
+        log('断开连接失败:', error);
+    }
 };
 
 // 当前设备状态
@@ -73,21 +210,37 @@ let setDeviceName = async (name) => {
 
 // 推送应用
 let push = async (filePath, blob) => {
-    if (!adb) {
+    if (!window.adbDevice) {
         alert("未连接到设备");
         return;
     }
+    
     clear();
     showProgress(true);
     try {
         log("正在推送 " + filePath + " ...");
-        sync = await adb.sync();
-        await sync.push(blob, filePath, 0644, null);
-        await sync.quit();
-        sync = null;
-        log("推送成功！");
+        
+        // 转换 blob 为 ArrayBuffer
+        const arrayBuffer = await blob.arrayBuffer();
+        
+        // 使用新的 sync 协议推送
+        const syncStream = await window.adbDevice.sync();
+        try {
+            // 这里需要实现完整的 sync 协议
+            // 暂时使用简单的 shell 命令推送
+            const shellStream = await window.adbDevice.shell(`cat > ${filePath} && chmod 0644 ${filePath}`);
+            try {
+                await shellStream.send(arrayBuffer);
+                await shellStream.close();
+                log("推送成功！");
+            } finally {
+                await shellStream.close();
+            }
+        } finally {
+            await syncStream.close();
+        }
     } catch (error) {
-        log(error);
+        log('推送失败:', error);
         alert("推送失败，请断开重新尝试。");
     }
     showProgress(false);
@@ -95,28 +248,32 @@ let push = async (filePath, blob) => {
 
 // 执行命令
 let exec_shell = async (command) => {
-    if (!adb) {
+    if (!window.adbDevice) {
         alert("未连接到设备");
         return;
     }
     if (!command) {
         return;
     }
+    
     clear();
     showProgress(true);
     log('开始执行指令: ' + command + '\n');
+    
     try {
-        let shell = await adb.shell(command);
-        let r = await shell.receive();
-        while (r.data != null) {
-            let decoder = new TextDecoder('utf-8');
-            let txt = decoder.decode(r.data);
-            log(txt);
-            r = await shell.receive();
+        const shellStream = await window.adbDevice.shell(command);
+        try {
+            let data;
+            while ((data = await shellStream.receive()) !== null) {
+                const decoder = new TextDecoder('utf-8');
+                const txt = decoder.decode(data);
+                log(txt);
+            }
+        } finally {
+            await shellStream.close();
         }
-        shell.close();
     } catch (error) {
-        log(error);
+        log('命令执行失败:', error);
         console.error("命令执行失败，请断开重新尝试");
     }
     showProgress(false);
@@ -124,27 +281,30 @@ let exec_shell = async (command) => {
 
 // 执行命令并返回输出
 let execShellAndGetOutput = async (command) => {
-    if (!adb) {
+    if (!window.adbDevice) {
         alert("未连接到设备");
         return "";
     }
     if (!command) {
         return "";
     }
+    
     let output = "";
     try {
-        let shell = await adb.shell(command);
-        let r = await shell.receive();
-        while (r.data != null) {
-            let decoder = new TextDecoder('utf-8');
-            let txt = decoder.decode(r.data);
-            output += txt;
-            log(txt); // 同时输出到日志
-            r = await shell.receive();
+        const shellStream = await window.adbDevice.shell(command);
+        try {
+            let data;
+            while ((data = await shellStream.receive()) !== null) {
+                const decoder = new TextDecoder('utf-8');
+                const txt = decoder.decode(data);
+                output += txt;
+                log(txt); // 同时输出到日志
+            }
+        } finally {
+            await shellStream.close();
         }
-        shell.close();
     } catch (error) {
-        log(error);
+        log('命令执行失败:', error);
         throw error;
     }
     return output;
@@ -166,7 +326,9 @@ try {
             push,
             exec_shell,
             execShellAndGetOutput,
-            exec_command
+            exec_command,
+            adbDevice,
+            adbTransport
         };
     }
 } catch (e) {

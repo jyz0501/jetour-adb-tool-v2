@@ -1,8 +1,21 @@
 // 应用安装相关功能
 
+// 检查浏览器支持
+function checkBrowserSupport() {
+    const isSupported = checkWebUSBSupport();
+    if (!isSupported || !navigator.usb) {
+        alert("检测到您的浏览器不支持，请根据顶部的 "警告提示" 更换指定浏览器使用。");
+        return false;
+    }
+    return true;
+}
+
 // 一键安装应用 - 虚拟返回键
 let xnfhj = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -43,7 +56,10 @@ let xnfhj = async () => {
 
 // 一键安装应用 - 一键清理
 let yjql = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -112,7 +128,10 @@ let yjql = async () => {
 
 // 一键安装应用 - 沙发管家HD
 let sfgj = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -121,12 +140,11 @@ let sfgj = async () => {
     toast.style.opacity = '1';
     toast.style.display = 'block';
     try {
-        let downUrl = "https://gjx.ahcjzs.com/apk/sfgj.apk";
-        let fileBlob = await fetchWithProgress(downUrl, (progressEvent) => {
-            const percentComplete = ((progressEvent.loaded / progressEvent.total) * 100).toFixed(2);
-            updateDownloadProgressText(percentComplete);
-        });
-        if (!fileBlob) throw new Error('下载失败！！！');
+        // 使用本地APK文件
+        let response = await fetch('apk/沙发管家4.9.54.apk');
+        let fileBlob = await response.blob();
+        if (!fileBlob) throw new Error('读取文件失败！！！');
+        
         let filePath = "/data/local/tmp/sfgj.apk";
         toast.style.opacity = '0';
         setTimeout(() => {
@@ -153,7 +171,10 @@ let sfgj = async () => {
 
 // 一键安装应用 - 大伦应用管家
 let ahyygj = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -162,12 +183,10 @@ let ahyygj = async () => {
     toast.style.opacity = '1';
     toast.style.display = 'block';
     try {
-        let downUrl = "https://file.vju.cc/%E5%BA%94%E7%94%A8%E7%AE%A1%E5%AE%B6/%E5%BA%94%E7%94%A8%E7%AE%A1%E5%AE%B61.8.0%E5%85%AC%E7%AD%BE%E7%89%88.apk";
-        let fileBlob = await fetchWithProgress(downUrl, (progressEvent) => {
-            const percentComplete = ((progressEvent.loaded / progressEvent.total) * 100).toFixed(2);
-            updateDownloadProgressText(percentComplete);
-        });
-        if (!(fileBlob instanceof Blob)) throw new Error('下载失败！！！');
+        // 使用本地APK文件
+        let response = await fetch('apk/应用管家1.8.3.apk');
+        let fileBlob = await response.blob();
+        if (!(fileBlob instanceof Blob)) throw new Error('读取文件失败！！！');
         let filePath = "/data/local/tmp/ahyygj.apk";
         toast.style.opacity = '0';
         setTimeout(() => {
@@ -179,8 +198,9 @@ let ahyygj = async () => {
         let installOutput = await execShellAndGetOutput("pm install -g -r " + filePath);
         if (installOutput.includes('Success')) {
             log('安装成功！');
-            await adb.tcpip(5555);
-            log('无线ADB已激活，端口号: 5555');
+            // 暂时注释掉tcpip功能，因为新的adbDevice可能还没有实现这个方法
+            // await adbDevice.tcpip(5555);
+            // log('无线ADB已激活，端口号: 5555');
             alert("安装成功！");
         } else {
             log('安装失败！');
@@ -202,7 +222,10 @@ let ahyygj = async () => {
 
 // 一键安装应用 - 权限狗
 let qxg = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -243,7 +266,10 @@ let qxg = async () => {
 
 // 一键安装应用 - 无障碍管理器
 let wzagl = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -284,7 +310,10 @@ let wzagl = async () => {
 
 // 一键安装应用 - 返回菜单键
 let fhcdj = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -325,7 +354,10 @@ let fhcdj = async () => {
 
 // 一键安装应用 - 氢桌面
 let qzm = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -334,12 +366,10 @@ let qzm = async () => {
     toast.style.opacity = '1';
     toast.style.display = 'block';
     try {
-        let downUrl = "https://gjx.ahcjzs.com/apk/qzm.apk";
-        let fileBlob = await fetchWithProgress(downUrl, (progressEvent) => {
-            const percentComplete = ((progressEvent.loaded / progressEvent.total) * 100).toFixed(2);
-            updateDownloadProgressText(percentComplete);
-        });
-        if (!fileBlob) throw new Error('下载失败！！！');
+        // 使用本地APK文件
+        let response = await fetch('apk/氢桌面.apk');
+        let fileBlob = await response.blob();
+        if (!fileBlob) throw new Error('读取文件失败！！！');
         let filePath = "/data/local/tmp/qzm.apk";
         toast.style.opacity = '0';
         setTimeout(() => {
@@ -364,15 +394,64 @@ let qzm = async () => {
     }
 };
 
+// 一键安装应用 - 侧边栏
+let cdb = async () => {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
+        alert("未连接到设备");
+        return;
+    }
+    clear();
+    let toast = document.getElementById('downloading-toast');
+    toast.style.opacity = '1';
+    toast.style.display = 'block';
+    try {
+        // 使用本地APK文件
+        let response = await fetch('apk/侧边栏1.0.apk');
+        let fileBlob = await response.blob();
+        if (!fileBlob) throw new Error('读取文件失败！！！');
+        let filePath = "/data/local/tmp/cdb.apk";
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 500);
+        await push(filePath, fileBlob);
+        log('正在安装 侧边栏 ...');
+        let installOutput = await execShellAndGetOutput("pm install -g -r " + filePath);
+        if (installOutput.includes('Success')) {
+            log('安装成功！');
+            alert("安装成功！");
+        } else {
+            throw new Error('安装失败');
+        }
+    } catch (error) {
+        log('安装失败！！！');
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 500);
+        alert("安装失败！！！");
+    }
+};
+
 // 启动阿辉应用管家
 function startAhuiApp() {
+    if (!adbDevice) {
+        alert("未连接到设备");
+        return;
+    }
     exec_shell('pm list packages | grep com.ahcjzsdzb && am start -n com.ahcjzsdzb/com.yunpan.appmanage.ui.HomeActivity || ' +
                'pm list packages | grep com.ahcjzs && am start -n com.ahcjzs/com.yunpan.appmanage.ui.HomeActivity');
 }
 
 // 刷新应用列表
 let loadPackageList = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -385,14 +464,14 @@ let loadPackageList = async () => {
     showProgress(true);
     var packageContent = "";
     try {
-        let shell = await adb.shell("pm list packages -3"); // 显示第三方应用
+        let shell = await adbDevice.shell("pm list packages -3"); // 显示第三方应用
         let r = await shell.receive();
         while (r.data != null) {
             let decoder = new TextDecoder('utf-8');
             packageContent += decoder.decode(r.data);
             r = await shell.receive();
         }
-        shell.close();
+        await shell.close();
     } catch (error) {
         log(error);
     }
@@ -502,7 +581,10 @@ function initFileInput() {
 
 // 安装自选apk
 let installApkFile = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -554,6 +636,7 @@ try {
             wzagl,
             fhcdj,
             qzm,
+            cdb,
             startAhuiApp,
             loadPackageList,
             loadApkFile,

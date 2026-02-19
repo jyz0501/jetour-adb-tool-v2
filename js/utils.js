@@ -80,12 +80,63 @@ function hardReload() {
 
 // 检测浏览器是否支持WebUSB
 function checkWebUSBSupport() {
-    if ('usb' in navigator) {
-        document.getElementById('usb-warning').style.display = 'none';
-        return true;
-    } else {
+    // 基本检测
+    if (!('usb' in navigator)) {
         document.getElementById('usb-warning').style.display = 'block';
+        showEdgeDownloadPopup();
         return false;
+    }
+    
+    // 高级浏览器检测
+    const userAgent = navigator.userAgent;
+    
+    // Chrome 浏览器
+    if (userAgent.indexOf('Chrome') > -1 && userAgent.indexOf('Edg') === -1) {
+        const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+        if (chromeMatch) {
+            const chromeVersion = parseInt(chromeMatch[1]);
+            if (chromeVersion >= 61) {
+                document.getElementById('usb-warning').style.display = 'none';
+                return true;
+            }
+        }
+    }
+    
+    // Edge 浏览器
+    if (userAgent.indexOf('Edg') > -1) {
+        const edgeMatch = userAgent.match(/Edg\/(\d+)/);
+        if (edgeMatch) {
+            const edgeVersion = parseInt(edgeMatch[1]);
+            if (edgeVersion >= 79) {
+                document.getElementById('usb-warning').style.display = 'none';
+                return true;
+            }
+        }
+    }
+    
+    // Opera 浏览器
+    if (userAgent.indexOf('OPR') > -1) {
+        const operaMatch = userAgent.match(/OPR\/(\d+)/);
+        if (operaMatch) {
+            const operaVersion = parseInt(operaMatch[1]);
+            if (operaVersion >= 48) {
+                document.getElementById('usb-warning').style.display = 'none';
+                return true;
+            }
+        }
+    }
+    
+    // 其他浏览器
+    document.getElementById('usb-warning').style.display = 'block';
+    showEdgeDownloadPopup();
+    return false;
+}
+
+// 显示 Edge 浏览器下载弹窗
+function showEdgeDownloadPopup() {
+    const popup = confirm('您的浏览器不支持 WebUSB，请使用 Microsoft Edge 浏览器。\n\n是否立即下载 Edge 浏览器？');
+    if (popup) {
+        window.open('https://www.microsoft.com/zh-cn/edge/download', '_blank');
     }
 }
 

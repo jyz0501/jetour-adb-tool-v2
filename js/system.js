@@ -1,8 +1,21 @@
 // 系统工具相关功能
 
+// 检查浏览器支持
+function checkBrowserSupport() {
+    const isSupported = checkWebUSBSupport();
+    if (!isSupported || !navigator.usb) {
+        alert("检测到您的浏览器不支持，请根据顶部的 "警告提示" 更换指定浏览器使用。");
+        return false;
+    }
+    return true;
+}
+
 // 开关无线ADB
 let wifiAdb = async (enable) => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!window.adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -22,7 +35,8 @@ let wifiAdb = async (enable) => {
     clear();
     showProgress(true);
     try {
-        await adb.tcpip(port);
+        const tcpipStream = await window.adbDevice.tcpip(port);
+        await tcpipStream.close();
         log('tcpip at ' + port);
         alert('无线ADB已开启，端口号: ' + port);
     } catch (error) {
@@ -34,7 +48,10 @@ let wifiAdb = async (enable) => {
 
 // 激活大伦车机助手
 let jhyygj = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!window.adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -45,7 +62,8 @@ let jhyygj = async () => {
     try {
         // 先停止指定应用
         await exec_shell(shellForceStop);
-        await adb.tcpip(port);
+        const tcpipStream = await window.adbDevice.tcpip(port);
+        await tcpipStream.close();
         log('tcpip at ' + port);
         alert("激活成功");
     } catch (error) {
@@ -57,7 +75,10 @@ let jhyygj = async () => {
 
 // 解除网络防火墙
 let jcwlxz = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!window.adbDevice) {
         alert("未连接到设备");
         return;
     }
@@ -94,7 +115,10 @@ let jcwlxz = async () => {
 
 // 解除安装限制
 let jcazxz = async () => {
-    if (!adb) {
+    if (!checkBrowserSupport()) {
+        return;
+    }
+    if (!window.adbDevice) {
         alert("未连接到设备");
         return;
     }
