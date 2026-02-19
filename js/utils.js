@@ -80,6 +80,15 @@ function hardReload() {
 
 // 检测浏览器是否支持WebUSB
 function checkWebUSBSupport() {
+    // 检测 iOS 设备
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isIOS) {
+        document.getElementById('usb-warning').innerHTML = '⚠️ iOS 设备暂不支持 WebUSB 连接<br>请使用以下替代方案：<br>1. 使用 Windows/Mac 电脑连接<br>2. 使用无线 ADB（手机设置→开发者选项→无线调试）';
+        document.getElementById('usb-warning').style.display = 'block';
+        return false;
+    }
+    
     // 基本检测
     if (!('usb' in navigator)) {
         document.getElementById('usb-warning').style.display = 'block';

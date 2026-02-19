@@ -170,7 +170,7 @@ let sfgj = async () => {
 };
 
 // 一键安装应用 - 大伦应用管家
-let ahyygj = async () => {
+let yygj = async () => {
     if (!checkBrowserSupport()) {
         return;
     }
