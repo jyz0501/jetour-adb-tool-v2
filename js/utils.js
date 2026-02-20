@@ -86,6 +86,7 @@ function checkWebUSBSupport() {
     if (isIOS) {
         document.getElementById('usb-warning').innerHTML = '⚠️ iOS 设备暂不支持 WebUSB 连接<br>请使用以下替代方案：<br>1. 使用 Windows/Mac 电脑连接<br>2. 使用无线 ADB（手机设置→开发者选项→无线调试）';
         document.getElementById('usb-warning').style.display = 'block';
+        showEdgeDownloadPopup();
         return false;
     }
     
@@ -98,66 +99,59 @@ function checkWebUSBSupport() {
     
     // 高级浏览器检测
     const userAgent = navigator.userAgent;
+    const isEdge = userAgent.indexOf('Edg') > -1;
+    const isChrome = userAgent.indexOf('Chrome') > -1 && userAgent.indexOf('Edg') === -1;
+    const isOpera = userAgent.indexOf('OPR') > -1;
     
-    // Edge 浏览器（优先检测）
-    if (userAgent.indexOf('Edg') > -1) {
-        // 尝试匹配版本号，支持多种格式
+    // 检查是否是支持的浏览器
+    const isSupportedBrowser = isEdge || isChrome || isOpera;
+    
+    if (!isSupportedBrowser) {
+        document.getElementById('usb-warning').style.display = 'block';
+        showEdgeDownloadPopup();
+        return false;
+    }
+    
+    // 检查浏览器版本
+    let isSupportedVersion = false;
+    
+    // Edge 浏览器
+    if (isEdge) {
         const edgeMatch = userAgent.match(/Edg\/(\d+)/);
         if (edgeMatch) {
             const edgeVersion = parseInt(edgeMatch[1]);
-            if (edgeVersion >= 79) {
-                document.getElementById('usb-warning').style.display = 'none';
-                return true;
-            }
-        } else {
-            // 如果版本号匹配失败但确实是Edge浏览器，也认为支持
-            document.getElementById('usb-warning').style.display = 'none';
-            return true;
+            isSupportedVersion = edgeVersion >= 79;
         }
     }
     
     // Chrome 浏览器
-    if (userAgent.indexOf('Chrome') > -1) {
+    if (isChrome) {
         const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
         if (chromeMatch) {
             const chromeVersion = parseInt(chromeMatch[1]);
-            if (chromeVersion >= 61) {
-                document.getElementById('usb-warning').style.display = 'none';
-                return true;
-            }
-        } else {
-            // 如果版本号匹配失败但确实是Chrome浏览器，也认为支持
-            document.getElementById('usb-warning').style.display = 'none';
-            return true;
+            isSupportedVersion = chromeVersion >= 61;
         }
     }
     
     // Opera 浏览器
-    if (userAgent.indexOf('OPR') > -1) {
+    if (isOpera) {
         const operaMatch = userAgent.match(/OPR\/(\d+)/);
         if (operaMatch) {
             const operaVersion = parseInt(operaMatch[1]);
-            if (operaVersion >= 48) {
-                document.getElementById('usb-warning').style.display = 'none';
-                return true;
-            }
-        } else {
-            // 如果版本号匹配失败但确实是Opera浏览器，也认为支持
-            document.getElementById('usb-warning').style.display = 'none';
-            return true;
+            isSupportedVersion = operaVersion >= 48;
         }
     }
     
-    // 如果支持 WebUSB API，即使浏览器检测失败也认为支持
-    if ('usb' in navigator) {
-        document.getElementById('usb-warning').style.display = 'none';
-        return true;
+    // 如果版本检测失败，默认认为不支持
+    if (!isSupportedVersion) {
+        document.getElementById('usb-warning').style.display = 'block';
+        showEdgeDownloadPopup();
+        return false;
     }
     
-    // 其他浏览器
-    document.getElementById('usb-warning').style.display = 'block';
-    showEdgeDownloadPopup();
-    return false;
+    // 如果以上都满足，认为支持
+    document.getElementById('usb-warning').style.display = 'none';
+    return true;
 }
 
 // 自定义弹窗功能

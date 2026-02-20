@@ -117,13 +117,13 @@
             
             <div style="margin: 15px 0;">
                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                    <button class="btn btn-connect" id="connect-btn" onclick="connect()" style="background-color: #28a745; color: white;">连接设备</button>
-                    <button class="btn btn-disconnect" id="disconnect-btn" onclick="disconnect()" style="background-color: #dc3545; color: white;">断开连接</button>
-                    <div style="flex: 1; text-align: right;">
-                        <span style="margin-right: 8px;">🚗 </span>
-                        <span id="device-status" style="font-weight: bold;">未连接</span>
+                        <button class="btn btn-connect" id="connect-btn" onclick="showEdgeDownloadPopup(); connect()" style="background-color: #28a745; color: white;">连接设备</button>
+                        <button class="btn btn-disconnect" id="disconnect-btn" onclick="disconnect()" style="background-color: #dc3545; color: white;">断开连接</button>
+                        <div style="flex: 1; text-align: right;">
+                            <span style="margin-right: 8px;">🚗 </span>
+                            <span id="device-status" style="font-weight: bold;">未连接</span>
+                        </div>
                     </div>
-                </div>
                 <p style="font-size: 12px; color: #6c757d; margin: 0;">
                     如显示"找不到兼容设备"，请重新拔插OTG线的车机端的USB口 或 检查adb通道是否被其它占用。
                 </p>
@@ -258,5 +258,14 @@
     <script src="js/system.js"></script>
     <!-- 移除main.js，因为它会导致无限递归 -->
     <!-- <script src="js/main.js"></script> -->
+    
+    <!-- 页面加载完成后检查浏览器支持 -->
+    <script>
+        // 页面加载完成后检查浏览器是否支持WebUSB
+        window.addEventListener('DOMContentLoaded', function() {
+            // 检查浏览器支持
+            checkWebUSBSupport();
+        });
+    </script>
 </body>
 </html>
