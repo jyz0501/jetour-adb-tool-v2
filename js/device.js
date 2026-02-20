@@ -547,8 +547,60 @@ let showWirelessDeviceSelection = (devices) => {
     });
 };
 
+// 检查浏览器支持并连接
+let checkBrowserSupportAndConnect = async () => {
+    try {
+        // 检查浏览器是否支持 WebUSB
+        const isSupported = checkWebUSBSupport();
+        if (!isSupported || !navigator.usb) {
+            // 不支持，显示 Edge 下载弹窗
+            showEdgeDownloadPopup();
+            // 弹窗后仍然尝试连接，因为用户可能已经在下载浏览器
+            setTimeout(connect, 1000);
+        } else {
+            // 支持，直接连接
+            connect();
+        }
+    } catch (error) {
+        log('检查浏览器支持失败:', error);
+        // 出错时仍然尝试连接
+        connect();
+    }
+};
+
 // 无线连接
 let wirelessConnect = async () => {
+    try {
+        // 检查浏览器是否支持 WebUSB
+        const isSupported = checkWebUSBSupport();
+        if (!isSupported || !navigator.usb) {
+            // 不支持，显示 Edge 下载弹窗
+            showEdgeDownloadPopup();
+            // 弹窗后仍然尝试连接，因为用户可能已经在下载浏览器
+            setTimeout(async () => {
+                await performWirelessConnect();
+            }, 1000);
+        } else {
+            // 支持，直接连接
+            await performWirelessConnect();
+        }
+    } catch (error) {
+        log('无线连接失败:', error);
+        logDevice('无线连接失败: ' + (error.message || error.toString()));
+        window.adbDevice = null;
+        window.adbTransport = null;
+        
+        if (error.message && error.message.indexOf('User canceled') != -1) {
+            // 用户取消连接，不显示错误
+            logDevice('用户取消连接');
+        } else {
+            alert('无线连接失败，请检查设备状态和网络连接。');
+        }
+    }
+};
+
+// 执行无线连接操作
+let performWirelessConnect = async () => {
     try {
         clearDeviceLog();
         logDevice('开始无线 ADB 连接...');
@@ -618,17 +670,8 @@ let wirelessConnect = async () => {
             window.adbTransport = null;
         }
     } catch (error) {
-        log('无线连接失败:', error);
-        logDevice('无线连接失败: ' + (error.message || error.toString()));
-        window.adbDevice = null;
-        window.adbTransport = null;
-        
-        if (error.message && error.message.indexOf('User canceled') != -1) {
-            // 用户取消连接，不显示错误
-            logDevice('用户取消连接');
-        } else {
-            alert('无线连接失败，请检查设备状态和网络连接。');
-        }
+        log('执行无线连接失败:', error);
+        throw error;
     }
 };
 
