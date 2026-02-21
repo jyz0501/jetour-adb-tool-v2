@@ -266,15 +266,14 @@ let scanNetworkAdbDevices = async () => {
     return networkDevices;
 };
 
-// 扫描 USB 端口设备
+// 扫描 USB 端口设备 - 使用 requestDevice 而不是 getDevices
 let scanUsbDevices = async () => {
     log('开始扫描有线 USB 设备...');
     logDevice('开始扫描有线 USB 设备...');
     
-    // 扫描逻辑
     const devices = [];
     
-    // 只扫描 WebUSB 设备（有线设备）
+    // 先尝试获取已授权的设备
     try {
         const webusbDevices = await navigator.usb.getDevices();
         webusbDevices.forEach(device => {
@@ -283,22 +282,66 @@ let scanUsbDevices = async () => {
                 name: device.productName || 'USB设备',
                 vendorId: device.vendorId,
                 productId: device.productId,
-                device: device
+                device: device,
+                authorized: true
             });
         });
-        log(`发现 ${webusbDevices.length} 个 WebUSB 设备`);
-        logDevice(`发现 ${webusbDevices.length} 个 WebUSB 设备`);
         
-        // 记录每个设备的详细信息
-        webusbDevices.forEach((device, index) => {
-            logDevice(`设备 ${index + 1}: ${device.productName || 'USB设备'} (VID: ${device.vendorId}, PID: ${device.productId})`);
-        });
+        if (webusbDevices.length > 0) {
+            log(`发现 ${webusbDevices.length} 个已授权的 WebUSB 设备`);
+            logDevice(`发现 ${webusbDevices.length} 个已授权的 WebUSB 设备`);
+            
+            // 记录每个设备的详细信息
+            webusbDevices.forEach((device, index) => {
+                logDevice(`设备 ${index + 1}: ${device.productName || 'USB设备'} (VID: ${device.vendorId}, PID: ${device.productId}) [已授权]`);
+            });
+        } else {
+            log('未发现已授权的设备，将请求用户选择设备');
+            logDevice('未发现已授权的设备，将请求用户选择设备');
+        }
     } catch (error) {
         log('WebUSB 设备扫描失败:', error);
         logDevice('WebUSB 设备扫描失败: ' + (error.message || error.toString()));
     }
     
     return devices;
+};
+
+// 请求用户选择设备
+let requestNewDevice = async () => {
+    log('请求用户选择设备...');
+    logDevice('请求用户选择设备...');
+    
+    try {
+        // ADB 设备过滤器
+        const filters = [
+            { classCode: 255, subclassCode: 66, protocolCode: 1 }, // ADB
+            { classCode: 255, subclassCode: 66, protocolCode: 3 }  // Fastboot
+        ];
+        
+        const device = await navigator.usb.requestDevice({ filters });
+        
+        log(`用户选择了设备: ${device.productName || '未知设备'}`);
+        logDevice(`用户选择了设备: ${device.productName || '未知设备'} (VID: ${device.vendorId}, PID: ${device.productId})`);
+        
+        return {
+            type: 'WebUSB',
+            name: device.productName || 'USB设备',
+            vendorId: device.vendorId,
+            productId: device.productId,
+            device: device,
+            authorized: false // 新选择的设备还未授权
+        };
+    } catch (error) {
+        if (error.name === 'NotFoundError') {
+            log('用户取消了设备选择');
+            logDevice('用户取消了设备选择');
+        } else {
+            log('请求设备失败:', error);
+            logDevice('请求设备失败: ' + (error.message || error.toString()));
+        }
+        return null;
+    }
 };
 
 // 显示设备选择弹窗
@@ -312,9 +355,9 @@ let showDeviceSelection = (devices) => {
             content += `
                 <div style="padding: 20px; text-align: center; color: #666;">
                     <div style="font-size: 36px; margin-bottom: 10px;">🔍</div>
-                    <div style="font-size: 14px; margin-bottom: 8px;">未发现任何设备</div>
-                    <div style="font-size: 11px; color: #999; line-height: 1.5;">
-                        请检查：USB线连接、USB调试模式、设备授权
+                    <div style="font-size: 14px; margin-bottom: 8px;">未发现已授权的设备</div>
+                    <div style="font-size: 11px; color: #999; line-height: 1.5; margin-bottom: 15px;">
+                        点击下方"添加新设备"按钮选择设备
                     </div>
                 </div>
             `;
@@ -327,8 +370,9 @@ let showDeviceSelection = (devices) => {
                 }
 
                 if (deviceInfo) {
+                    const authBadge = device.authorized ? '<span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px;">已授权</span>' : '';
                     content += `<div style="padding: 8px; margin: 4px 0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;" onclick="selectDevice(${index})" id="device-${index}">`;
-                    content += `<div style="font-weight: bold; font-size: 13px;">${deviceInfo}</div>`;
+                    content += `<div style="font-weight: bold; font-size: 13px;">${deviceInfo}${authBadge}</div>`;
                     content += '</div>';
                 }
             });
@@ -376,9 +420,9 @@ let showDeviceSelection = (devices) => {
                     updatedContent += `
                         <div style="padding: 20px; text-align: center; color: #666;">
                             <div style="font-size: 36px; margin-bottom: 10px;">🔍</div>
-                            <div style="font-size: 14px; margin-bottom: 8px;">未发现任何设备</div>
+                            <div style="font-size: 14px; margin-bottom: 8px;">未发现已授权的设备</div>
                             <div style="font-size: 11px; color: #999; line-height: 1.5;">
-                                请检查：USB线连接、USB调试模式、设备授权
+                                点击"添加新设备"按钮选择设备
                             </div>
                         </div>
                     `;
@@ -391,8 +435,9 @@ let showDeviceSelection = (devices) => {
                         }
 
                         if (deviceInfo) {
+                            const authBadge = device.authorized ? '<span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 5px;">已授权</span>' : '';
                             updatedContent += `<div style="padding: 8px; margin: 4px 0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;" onclick="selectDevice(${index})" id="device-${index}">`;
-                            updatedContent += `<div style="font-weight: bold; font-size: 13px;">${deviceInfo}</div>`;
+                            updatedContent += `<div style="font-weight: bold; font-size: 13px;">${deviceInfo}${authBadge}</div>`;
                             updatedContent += '</div>';
                         }
                     });
@@ -416,27 +461,43 @@ let showDeviceSelection = (devices) => {
             }
         };
         
+        // 添加新设备函数
+        window.addNewDevice = async () => {
+            const newDevice = await requestNewDevice();
+            if (newDevice) {
+                // 关闭当前弹窗
+                cleanup();
+                closeModal();
+                
+                // 返回新选择的设备
+                resolve(newDevice);
+            }
+        };
+        
         // 清理函数
         function cleanup() {
             delete window.selectDevice;
             delete window.refreshDevices;
+            delete window.addNewDevice;
         }
         
         // 使用原始的 showModal 函数显示设备选择弹窗
         showModal('选择设备', content, {
             showCancel: true,
             cancelText: '取消',
-            confirmText: '确定连接',
+            confirmText: '连接选中设备',
+            customFooter: `
+                <button class="custom-modal-btn custom-modal-btn-secondary" onclick="addNewDevice()">添加新设备</button>
+                <button class="custom-modal-btn custom-modal-btn-primary" onclick="confirmModal()">连接选中设备</button>
+            `,
             callback: function(confirmed) {
                 if (confirmed) {
-                    if (devices.length === 0) {
-                        // 没有设备，提示用户刷新
-                        alert('未发现设备，请点击"刷新设备"按钮重新扫描');
-                        // 返回 false 阻止关闭弹窗
-                        return false;
-                    } else if (selectedDeviceIndex === -1) {
+                    if (selectedDeviceIndex === -1) {
                         // 有设备但没选择，提示用户
                         alert('请先选择要连接的设备');
+                        // 返回 false 阻止关闭弹窗
+                        return false;
+                    }
                         // 返回 false 阻止关闭弹窗
                         return false;
                     } else {
