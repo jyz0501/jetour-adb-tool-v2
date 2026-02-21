@@ -5,6 +5,76 @@
 window.adbDevice = null;
 window.adbTransport = null;
 
+// 车机授权提示弹窗
+let authorizationPromptElement = null;
+
+// 显示车机授权提示
+function showDeviceAuthorizationPrompt() {
+    // 移除已存在的弹窗
+    closeDeviceAuthorizationPrompt();
+    
+    // 创建弹窗元素
+    authorizationPromptElement = document.createElement('div');
+    authorizationPromptElement.id = 'authorization-prompt';
+    authorizationPromptElement.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center;">
+            <div style="background-color: white; padding: 30px; border-radius: 12px; max-width: 500px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+                <div style="font-size: 48px; margin-bottom: 20px;">📱</div>
+                <h2 style="margin: 0 0 20px 0; color: #333;">请在车机上授权</h2>
+                <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                    车机屏幕上应该会弹出 USB 调试授权提示<br><br>
+                    请在车机屏幕上点击 <strong>"允许"</strong> 或 <strong>"始终允许"</strong><br><br>
+                    授权成功后此弹窗将自动关闭
+                </p>
+                <div style="padding: 15px; background-color: #f8f9fa; border-radius: 8px; margin-bottom: 20px; text-align: left; font-size: 14px;">
+                    <strong>提示：</strong><br>
+                    • 如果车机屏幕没有弹出提示，请尝试拔掉USB线重新插入<br>
+                    • 请确保已开启开发者选项和USB调试功能<br>
+                    • 车机可能需要输入PIN码进行授权
+                </div>
+                <button onclick="closeDeviceAuthorizationPrompt()" style="padding: 12px 30px; background-color: #6c757d; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer;">
+                    关闭提示
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(authorizationPromptElement);
+}
+
+// 关闭车机授权提示
+function closeDeviceAuthorizationPrompt() {
+    if (authorizationPromptElement) {
+        document.body.removeChild(authorizationPromptElement);
+        authorizationPromptElement = null;
+    }
+}
+
+// 显示授权失败提示
+function showDeviceAuthorizationError() {
+    showModal('USB 授权失败', `
+        <div style="text-align: left; line-height: 1.8;">
+            <p><strong>无法获取 USB 接口权限</strong></p>
+            <p>请在车机屏幕上完成以下操作：</p>
+            <ol style="margin: 10px 0 10px 20px;">
+                <li>查看车机屏幕是否有 USB 调试授权提示</li>
+                <li>点击 <strong>"允许"</strong> 或 <strong>"始终允许"</strong></li>
+                <li>如果没有弹出提示，请：</li>
+                <ul style="margin: 5px 0 5px 40px;">
+                    <li>拔掉 USB 线重新插入</li>
+                    <li>检查车机的开发者选项中"USB 调试"是否已开启</li>
+                    <li>关闭其他正在运行的 ADB 工具（如命令行 adb）</li>
+                </ul>
+            </ol>
+            <p style="color: #dc3545; margin-top: 15px;"><strong>注意：</strong>每次拔插USB线后，都需要在车机上重新授权</p>
+        </div>
+    `, {
+        showCancel: false,
+        confirmText: '我知道了',
+        confirmClass: 'custom-modal-btn-primary'
+    });
+}
+
 // 设备日志记录
 function logDevice(message) {
     const timestamp = new Date().toLocaleTimeString();
@@ -43,11 +113,21 @@ let initWebUSB = async (device) => {
             window.adbTransport = await WebUsbTransport.requestDevice();
         }
 
+        // 显示车机授权提示弹窗
+        showDeviceAuthorizationPrompt();
+
         await window.adbTransport.open();
         log('WebUSB 传输初始化成功');
         logDevice('WebUSB 传输初始化成功');
+        
+        // 关闭授权提示弹窗
+        closeDeviceAuthorizationPrompt();
+        
         return true;
     } catch (error) {
+        // 关闭授权提示弹窗
+        closeDeviceAuthorizationPrompt();
+        
         log('WebUSB 初始化失败:', error);
         logDevice('WebUSB 初始化失败: ' + (error.message || error.toString()));
         if (error.message) {
@@ -55,6 +135,10 @@ let initWebUSB = async (device) => {
                 log('用户取消选择设备');
                 logDevice('用户取消选择设备');
                 return false;
+            } else if (error.message.indexOf('Unable to claim interface') != -1 || error.message.indexOf('claimInterface') != -1) {
+                // 无法获取接口权限，可能需要在车机上授权
+                showDeviceAuthorizationError();
+                logDevice('无法获取 USB 接口权限');
             } else if (error.message.indexOf('was disconnected') != -1) {
                 alert('无法连接到此设备，请断开重新尝试。');
                 logDevice('设备已断开连接');

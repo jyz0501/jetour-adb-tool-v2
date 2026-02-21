@@ -79,6 +79,14 @@ class WebUsbTransport extends AdbTransport {
             // 打开设备
             await this.device.open();
             
+            // 尝试重置设备以触发授权请求
+            try {
+                await this.device.reset();
+            } catch (resetError) {
+                // 重置失败不是致命错误，继续尝试
+                console.log('Device reset failed, continuing...');
+            }
+            
             // 选择配置
             if (this.device.configuration === null) {
                 await this.device.selectConfiguration(1);
@@ -90,7 +98,7 @@ class WebUsbTransport extends AdbTransport {
                 throw new Error('ADB interface not found');
             }
 
-            // 声明接口
+            // 声明接口（此时车机应该弹出授权提示）
             await this.device.claimInterface(match.interfaceNumber);
 
             // 选择备用接口
