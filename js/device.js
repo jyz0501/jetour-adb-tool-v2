@@ -1,6 +1,5 @@
 // 设备管理模块 - 使用 ya-webadb 简化实现
-let adb = null;
-let webusb = null;
+// adb 和 webusb 变量在 main.js 中声明
 
 // 日志输出
 let log = (...args) => {

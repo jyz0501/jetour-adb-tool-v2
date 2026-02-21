@@ -1,22 +1,6 @@
 let adb;
 let webusb;
 
-let log = (...args) => {
-	if (args[0] instanceof Error) {
-		console.error.apply(console, args);
-	} else {
-		console.log.apply(console, args);
-	}
-	
-	// Check if the message is about device connection
-	if (args[0] === "未连接到设备") {
-		$("#log-content").text(""); // Clear previous content
-	}
-	
-	// Append log to the log window
-	$("#log-content").text($("#log-content").text() + args.join(' ') + '\n');
-};
-
 let init = async () => {
 	if(!navigator.usb) {
 		openLogWindow();
