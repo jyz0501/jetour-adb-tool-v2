@@ -1,0 +1,31 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  GIT_DEPTH: 1
+
+before_script:
+  - npm install
+
+build:
+  stage: build
+  image: node:18
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - .
+    expire_in: 1 week
+  only:
+    - master
+
+deploy:
+  stage: deploy
+  image: node:18
+  script:
+    - echo "静态网站构建完成"
+  dependencies:
+    - build
+  only:
+    - master
