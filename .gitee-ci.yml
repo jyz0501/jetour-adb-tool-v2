@@ -1,0 +1,29 @@
+name: Deploy to Gitee Pages
+
+# 触发条件：推送到 master 分支
+triggers:
+  push:
+    branches:
+      - master
+
+# 阶段定义
+stages:
+  - deploy
+
+# 任务定义
+deploy-to-pages:
+  stage: deploy
+  image: node:18
+  script:
+    - apt-get update && apt-get install -y git
+    - git config --global user.name "gitee-ci"
+    - git config --global user.email "gitee-ci@gitee.com"
+    - git clone -b gh-pages $CI_REPOSITORY_URL gh-pages
+    - rm -rf gh-pages/*
+    - cp -r ./* gh-pages/
+    - cd gh-pages
+    - git add -A
+    - git commit -m "Deploy to Gitee Pages - $(date +'%Y-%m-%d %H:%M:%S')" || exit 0
+    - git push origin gh-pages
+  only:
+    - master
