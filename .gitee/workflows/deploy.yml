@@ -1,0 +1,44 @@
+name: Deploy to Gitee Pages
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check HTML files
+      run: |
+        echo "Checking HTML files..."
+        find . -name "*.html" -type f | head -10
+
+    - name: Check CSS files
+      run: |
+        echo "Checking CSS files..."
+        find . -name "*.css" -type f | head -10
+
+    - name: Check JavaScript files
+      run: |
+        echo "Checking JavaScript files..."
+        find . -name "*.js" -type f | head -10
+
+    - name: Deploy to Gitee Pages
+      if: github.ref == 'refs/heads/master'
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITEE_TOKEN }}
+        publish_dir: .
+        publish_branch: gh-pages
+        force_orphan: true
+        external_repository: Jinyz501/jetour_adb_tool
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
