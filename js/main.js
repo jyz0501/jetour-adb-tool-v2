@@ -379,45 +379,19 @@ let ftqfcj = async () => {
 }
 
 let showProgress = async (show, progress = 0, message = '') => {
-    if (show) {
-        $('.progress-container').css('display', 'flex');
-        $('.progress-bar').css('width', progress + '%');
-        $('.progress-bar').attr('aria-valuenow', progress);
-        if (progress > 0) {
-            $('.progress-text').text(message || `${progress}%`);
-        }
-        // Disable page interaction
-        $('body').addClass('page-disabled');
-    } else {
-        $('.progress-container').hide();
-        $('.progress-bar').css('width', '0%');
-        $('.progress-bar').attr('aria-valuenow', 0);
-        $('.progress-text').text('');
-        // Enable page interaction
-        $('body').removeClass('page-disabled');
-    }
+	if (show) {
+		$('.progress').show();
+		if (progress > 0) {
+			$('.progress-bar').css('width', progress + '%');
+		}
+	} else {
+		$('.progress').hide();
+		$('.progress-bar').css('width', '0%');
+	}
 };
 
 let wifiAdb = async (enable) => {
-	if (!adb){
-		log("未连接到设备");
-		return;
-	}
-	let port = $('#tcpip').val();
-	if(!enable){
-		port = -1;
-	}
-	if(!port){
-		log("需要填写端口号");
-		return;
-	}
-	showProgress(true);
-
-	try {
-		await adb.tcpip(port);
-	} catch (error) {
-	}
-	showProgress(false);
+	// wifiAdb 函数已移至 system.js
 };
 
 let loadFile = async () => {

@@ -37,6 +37,33 @@ let showProgress = async (show) => {
     }
 };
 
+// 执行 Shell 命令并返回输出
+let execShellAndGetOutput = async (command) => {
+    if (!adb) {
+        log("未连接到设备");
+        return "";
+    }
+    if (!command) {
+        return "";
+    }
+
+    try {
+        let shell = await adb.shell(command);
+        let r = await shell.receive();
+        let output = "";
+        while (r.data != null) {
+            let decoder = new TextDecoder('utf-8');
+            output += decoder.decode(r.data);
+            r = await shell.receive();
+        }
+        shell.close();
+        return output;
+    } catch (error) {
+        log("执行指令失败: " + error);
+        return "";
+    }
+};
+
 // 更新下载百分比文本
 function updateDownloadProgressText(percentage) {
     var progressText = document.getElementById('download-progress-text');

@@ -117,7 +117,7 @@
                 <div style="margin: 15px 0;">
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
                         <button class="btn btn-connect" id="connect-btn" onclick="checkBrowserSupportAndConnect()" style="background-color: #28a745; color: white;">有线连接（推荐）</button>
-                        <button class="btn btn-connect" id="wireless-connect-btn" onclick="showEdgeDownloadPopup(); wirelessConnect()" style="background-color: #17a2b8; color: white;" title="仅用于开启ADB无线调试端口，需USB连接">无线调试</button>
+                        <button class="btn btn-connect" id="wireless-connect-btn" onclick="wifiAdb()" style="background-color: #17a2b8; color: white;" title="仅用于开启ADB无线调试端口，需USB连接">无线调试</button>
                         <span style="background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">V2</span>
                         <button class="btn btn-disconnect" id="disconnect-btn" onclick="disconnect()" style="background-color: #dc3545; color: white;">断开连接</button>
                         <div style="flex: 1; text-align: right;">
@@ -251,7 +251,6 @@
 
     <!-- Custom JavaScript -->
     <script src="js/utils.js"></script>
-    <script src="js/device.js"></script>
     <script src="js/main.js"></script>
     <script src="js/apps.js"></script>
     <script src="js/system.js"></script>

@@ -15,7 +15,7 @@ let wifiAdb = async () => {
     if (!checkBrowserSupport()) {
         return;
     }
-    if (!window.adbDevice) {
+    if (!adb) {
         alert("未连接到设备");
         return;
     }
@@ -41,8 +41,7 @@ let wifiAdb = async () => {
     showProgress(true);
     log('正在开启无线ADB端口...\n');
     try {
-        const tcpipStream = await window.adbDevice.tcpip(portNumber);
-        await tcpipStream.close();
+        await adb.tcpip(portNumber);
         log('✓ 无线ADB已开启，端口号: ' + portNumber);
         log('✓ 设备现在可以通过网络连接');
         log('\n注意：浏览器无法直接连接TCP端口。');
@@ -63,7 +62,7 @@ let jhyygj = async () => {
     if (!checkBrowserSupport()) {
         return;
     }
-    if (!window.adbDevice) {
+    if (!adb) {
         alert("未连接到设备");
         return;
     }
@@ -74,8 +73,7 @@ let jhyygj = async () => {
     try {
         // 先停止指定应用
         await exec_shell(shellForceStop);
-        const tcpipStream = await window.adbDevice.tcpip(port);
-        await tcpipStream.close();
+        await adb.tcpip(port);
         log('tcpip at ' + port);
         alert("激活成功");
     } catch (error) {
@@ -90,7 +88,7 @@ let jcwlxz = async () => {
     if (!checkBrowserSupport()) {
         return;
     }
-    if (!window.adbDevice) {
+    if (!adb) {
         alert("未连接到设备");
         return;
     }
