@@ -64,6 +64,66 @@ let execShellAndGetOutput = async (command) => {
     }
 };
 
+// 推送文件到设备
+let push = async (filePath, blob, on_progress = null, silent = false, desc = '') => {
+	if (!adb) {
+		if (!silent) log("未连接到设备");
+		return;
+	}
+	$('.progress').show();
+
+	if (!silent) log("正在推送文件");
+
+	try {
+		let sync = await adb.sync();
+		await sync.push(blob, filePath, 0o644, (count, total) => {
+			let progress = Math.round((count / total) * 100);
+			$('.progress-bar').css('width', progress + '%');
+			if (on_progress) on_progress(count, total);
+		});
+		await sync.quit();
+		sync = null;
+		if (!silent) {
+			if (desc) {
+				log(`正在安装${desc}`);
+			} else {
+				log("文件推送完成");
+			}
+		}
+	} catch (error) {
+		if (!silent) log("推送失败");
+	}
+	$('.progress').hide();
+};
+
+// 执行 Shell 命令
+let exec_shell = async (command, silent = false) => {
+	if (!adb) {
+		if (!silent) log("未连接到设备");
+		return;
+	}
+	if (!command) {
+		return;
+	}
+	$('.progress').show();
+
+	if (!silent) log('正在执行指令...');
+	try {
+		let shell = await adb.shell(command);
+		let r = await shell.receive();
+		while (r.data != null) {
+			let decoder = new TextDecoder('utf-8');
+			let txt = decoder.decode(r.data);
+			if (!silent) log(txt);
+			r = await shell.receive();
+		}
+		shell.close();
+	} catch (error) {
+		if (!silent) log("执行指令失败");
+	}
+	$('.progress').hide();
+};
+
 // 更新下载百分比文本
 function updateDownloadProgressText(percentage) {
     var progressText = document.getElementById('download-progress-text');
