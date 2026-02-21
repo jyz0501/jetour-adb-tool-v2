@@ -1,13 +1,13 @@
 {
-  "name": "jetour-adb-tool",
-  "version": "1.0.0",
-  "description": "捷途大伦哥的应用管家 - ADB工具",
+  "name": "jetour-adb-tool-v2",
+  "version": "2.0.0",
+  "description": "捷途大伦哥的应用管家 V2 - 基于ya-webadb的ADB工具",
   "main": "index.html",
   "scripts": {
     "build": "echo 'Static project - no build needed'",
     "start": "npx serve . -p 8080"
   },
-  "keywords": ["adb", "android", "webusb"],
+  "keywords": ["adb", "android", "webusb", "ya-webadb"],
   "author": "",
   "license": "MIT"
 }

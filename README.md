@@ -1,6 +1,6 @@
-# 捷途大伦哥的应用管家
+# 捷途大伦哥的应用管家 V2
 
-一个基于WebUSB的ADB工具，用于在浏览器中管理Android设备，支持应用安装、系统工具等功能。
+一个基于WebUSB和ya-webadb的ADB工具（第二个版本），用于在浏览器中管理Android设备，支持应用安装、系统工具等功能。
 
 ## 功能特性
 
@@ -42,23 +42,27 @@
 
 ### 项目结构
 ```
-jetour_adb_tool/
+jetour_adb_tool_v2/
 ├── index.html          # 主页面
 ├── css/
 │   └── style.css       # 样式文件
 ├── js/
+│   ├── adb/
+│   │   └── webadb.js   # ya-webadb 核心库
 │   ├── utils.js        # 工具函数
 │   ├── device.js       # 设备管理
 │   ├── apps.js         # 应用安装
 │   ├── system.js       # 系统工具
 │   └── main.js         # 主入口
+├── apk/               # APK文件目录
 └── README.md           # 说明文档
 ```
 
 ### 技术栈
 - **前端**：HTML5, CSS3, JavaScript
-- **ADB**：使用ADB.js库（CDN版本）
+- **ADB库**：ya-webadb（完整实现）
 - **USB通信**：WebUSB API
+- **密钥管理**：IndexedDB
 
 ## 使用说明
 
