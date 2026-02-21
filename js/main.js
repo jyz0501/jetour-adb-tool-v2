@@ -1,4 +1,4 @@
-// 设备连接管理模块
+// 设备连接管理模块 - V2
 // adb 和 webusb 变量在 utils.js 中声明
 
 // 初始化 WebUSB

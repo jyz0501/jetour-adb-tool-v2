@@ -128,7 +128,7 @@ let jcazxz = async () => {
     if (!checkBrowserSupport()) {
         return;
     }
-    if (!window.adbDevice) {
+    if (!adb) {
         alert("未连接到设备");
         return;
     }
