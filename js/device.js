@@ -5,6 +5,74 @@
 window.adbDevice = null;
 window.adbTransport = null;
 
+// 设备状态枚举
+const DeviceState = {
+    DISCONNECTED: 'disconnected',        // 未连接
+    DISCOVERING: 'discovering',        // 发现设备中
+    CONNECTING: 'connecting',          // 连接中
+    AUTHORIZING: 'authorizing',        // 授权中
+    CONNECTED: 'connected',            // 已连接
+    ERROR: 'error'                    // 错误状态
+};
+
+// 当前设备状态
+let currentDeviceState = DeviceState.DISCONNECTED;
+
+// 设备授权状态
+let deviceAuthorizationStatus = {
+    required: false,        // 是否需要授权
+    completed: false,        // 授权是否完成
+    type: null,            // 授权类型 (token/signature/public_key)
+    token: null            // 设备返回的令牌
+};
+
+// 更新设备状态
+function updateDeviceState(newState) {
+    currentDeviceState = newState;
+    updateDeviceStatusDisplay();
+    console.log('[Device] 状态变更:', newState);
+}
+
+// 更新设备状态显示
+function updateDeviceStatusDisplay() {
+    const statusElement = document.getElementById('device-status');
+    if (!statusElement) return;
+
+    const statusMap = {
+        'disconnected': { text: '未连接', color: '#6c757d', icon: '🚗' },
+        'discovering': { text: '正在发现设备...', color: '#ffc107', icon: '🔍' },
+        'connecting': { text: '正在连接...', color: '#17a2b8', icon: '🔌' },
+        'authorizing': { text: '等待授权...', color: '#fd7e14', icon: '🔐' },
+        'connected': { text: '已连接', color: '#28a745', icon: '✅' },
+        'error': { text: '连接失败', color: '#dc3545', icon: '❌' }
+    };
+
+    const status = statusMap[currentDeviceState] || statusMap['disconnected'];
+    statusElement.innerHTML = `${status.icon} <span style="color: ${status.color};">${status.text}</span>`;
+    statusElement.style.fontWeight = 'bold';
+}
+
+// 获取当前设备状态
+function getDeviceState() {
+    return currentDeviceState;
+}
+
+// 检查设备是否已连接
+function isDeviceConnected() {
+    return currentDeviceState === DeviceState.CONNECTED && window.adbDevice && window.adbDevice.connected;
+}
+
+// 获取设备授权状态
+function getDeviceAuthorizationStatus() {
+    return deviceAuthorizationStatus;
+}
+
+// 更新授权状态
+function updateAuthorizationStatus(status) {
+    deviceAuthorizationStatus = { ...deviceAuthorizationStatus, ...status };
+    console.log('[Device] 授权状态:', deviceAuthorizationStatus);
+}
+
 // 车机授权提示弹窗
 let authorizationPromptElement = null;
 
@@ -400,46 +468,97 @@ let showDeviceSelection = (devices) => {
     });
 };
 
-// 连接设备
+// 连接设备 - 分为发现、连接、授权三个阶段
 let connect = async () => {
     try {
         clearDeviceLog();
-        logDevice('开始连接设备...');
+        updateDeviceState(DeviceState.DISCOVERING);
+        logDevice('=== 开始设备连接流程 ===');
+        logDevice('阶段 1: 发现设备...');
         
-        // 1. 扫描设备
+        // 阶段 1: 扫描并发现设备
         const devices = await scanUsbDevices();
         
-        // 2. 显示设备选择弹窗
-        logDevice('显示设备选择弹窗...');
+        if (devices.length === 0) {
+            updateDeviceState(DeviceState.ERROR);
+            logDevice('未发现任何设备');
+            alert('未发现任何 ADB 设备，请检查：\n• USB 线连接\n• 车机是否开机\n• USB 调试是否开启');
+            return;
+        }
+        
+        logDevice(`发现 ${devices.length} 个设备`);
+        updateDeviceState(DeviceState.CONNECTING);
+        
+        // 阶段 2: 设备选择
+        logDevice('阶段 2: 选择设备...');
         const selectedDevice = await showDeviceSelection(devices);
         logDevice('已选择设备: ' + selectedDevice.name);
         
-        // 3. 连接 WebUSB 设备（有线连接）
+        // 阶段 3: 连接 USB 设备
         if (selectedDevice.type === 'WebUSB') {
-            // WebUSB 设备连接
-            logDevice('正在连接有线 USB 设备...');
+            logDevice('阶段 3: 连接 USB 设备...');
             const initialized = await initWebUSB(selectedDevice.device);
             if (!initialized || !window.adbTransport) {
-                logDevice('WebUSB 初始化失败');
+                updateDeviceState(DeviceState.ERROR);
+                logDevice('USB 设备初始化失败');
                 return;
             }
             
-            window.adbDevice = null;
-            
-            // 创建 ADB 设备并连接
-            logDevice('正在创建 ADB 设备...');
+            // 创建 ADB 设备
+            logDevice('创建 ADB 设备实例...');
             window.adbDevice = new AdbDevice(window.adbTransport);
-            await window.adbDevice.connect("host::web", () => {
-                alert('请在您的设备上允许 ADB 调试');
-                logDevice('请在您的设备上允许 ADB 调试');
+            
+            // 阶段 4: ADB 连接和授权
+            updateDeviceState(DeviceState.AUTHORIZING);
+            logDevice('阶段 4: ADB 连接和授权...');
+            
+            // 重置授权状态
+            updateAuthorizationStatus({
+                required: false,
+                completed: false,
+                type: null,
+                token: null
             });
             
+            // 认证回调函数
+            const authCallback = (authType, token) => {
+                logDevice(`收到认证请求: type=${authType}`);
+                updateAuthorizationStatus({
+                    required: true,
+                    type: authType,
+                    token: token
+                });
+                
+                // 显示授权提示
+                if (authType === 1) {
+                    logDevice('需要 TOKEN 认证');
+                    showDeviceAuthorizationPrompt();
+                } else if (authType === 2) {
+                    logDevice('需要 SIGNATURE 认证');
+                    showDeviceAuthorizationPrompt();
+                } else if (authType === 3) {
+                    logDevice('需要 RSA 公钥认证');
+                    showDeviceAuthorizationPrompt();
+                }
+            };
+            
+            // 连接设备（包含自动认证处理）
+            await window.adbDevice.connect("host::web", authCallback);
+            
+            // 检查连接状态
             if (window.adbDevice && window.adbDevice.connected) {
+                updateDeviceState(DeviceState.CONNECTED);
+                updateAuthorizationStatus({ completed: true });
+                
                 let deviceName = window.adbDevice.banner || '设备';
                 setDeviceName(deviceName);
-                console.log('设备连接成功:', window.adbDevice);
+                console.log('=== 设备连接成功 ===');
                 logDevice('设备连接成功: ' + deviceName);
+                logDevice('设备状态: 已连接');
+                logDevice('授权状态: 已完成');
+                logDevice('可以执行 ADB 命令了');
                 
+                // 显示成功提示
                 let toast = document.getElementById('success-toast');
                 toast.style.visibility = 'visible';
                 setTimeout(function() {
@@ -448,9 +567,14 @@ let connect = async () => {
                 
                 // 开始持续检测设备状态
                 startDeviceMonitoring();
+            } else {
+                updateDeviceState(DeviceState.ERROR);
+                logDevice('设备连接失败');
+                showDeviceAuthorizationError();
             }
         }
     } catch (error) {
+        updateDeviceState(DeviceState.ERROR);
         log('设备连接失败:', error);
         logDevice('设备连接失败: ' + (error.message || error.toString()));
         window.adbDevice = null;
@@ -484,7 +608,7 @@ let disconnect = async () => {
     }
     
     try {
-        logDevice('正在断开连接...');
+        logDevice('=== 开始断开连接 ===');
         
         if (window.adbDevice) {
             await window.adbDevice.disconnect();
@@ -493,6 +617,16 @@ let disconnect = async () => {
             await window.adbTransport.close();
             window.adbTransport = null;
         }
+        
+        // 重置所有状态
+        updateDeviceState(DeviceState.DISCONNECTED);
+        updateAuthorizationStatus({
+            required: false,
+            completed: false,
+            type: null,
+            token: null
+        });
+        
         setDeviceName(null);
         log('设备已断开连接');
         logDevice('设备已断开连接');
@@ -1107,7 +1241,13 @@ try {
             execShellAndGetOutput,
             exec_command,
             adbDevice,
-            adbTransport
+            adbTransport,
+            // 状态管理函数
+            updateDeviceState,
+            getDeviceState,
+            isDeviceConnected,
+            getDeviceAuthorizationStatus,
+            updateAuthorizationStatus
         };
     }
 } catch (e) {

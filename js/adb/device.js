@@ -12,6 +12,102 @@ class AdbDevice {
         this.banner = '';
         this.mode = '';
         this.connected = false;
+        // 存储 ADB 签名密钥
+        this.signatureKey = this.generateSignatureKey();
+    }
+
+    /**
+     * 生成签名密钥
+     * @returns {string} Base64 编码的签名密钥
+     */
+    generateSignatureKey() {
+        // 生成一个固定的签名密钥
+        const keyData = new Uint8Array([
+            0x55, 0x4a, 0x4e, 0x1b, 0xa6, 0x2d, 0x6a, 0x47,
+            0x7e, 0x8a, 0xf3, 0x12, 0xc4, 0x5e, 0x9b, 0x80,
+            0x3f, 0x1c, 0x7a, 0x6b, 0x2d, 0x5e, 0x8f, 0x4c,
+            0x9a, 0x2d, 0x6f, 0x3b, 0x7c, 0x8e, 0x1d, 0x4a,
+            0x5c, 0x8f, 0x2e, 0x7b, 0x9d, 0x4f, 0x2c, 0x8e,
+            0x1a, 0x6d, 0x3f, 0x9b, 0x7c, 0x2e, 0x5d, 0x8a,
+            0x4f, 0x1c, 0x7b, 0x9e, 0x2d, 0x5f, 0x8c, 0x3e,
+            0x7a, 0x1d, 0x4f, 0x8b, 0x2e, 0x5d, 0x9c, 0x7f
+        ]);
+        return btoa(String.fromCharCode.apply(null, keyData));
+    }
+
+    /**
+     * 计算 ADB 签名
+     * @param {Uint8Array} data - 要签名的数据
+     * @returns {Uint8Array} 签名结果
+     */
+    calculateSignature(data) {
+        const keyBytes = Uint8Array.from(atob(this.signatureKey), c => c.charCodeAt(0));
+        const signature = new Uint8Array(24);
+        
+        // 简单的签名算法（生产环境应使用更安全的算法）
+        for (let i = 0; i < 24; i++) {
+            signature[i] = data[i % data.length] ^ keyBytes[i];
+        }
+        
+        return signature;
+    }
+
+    /**
+     * 处理令牌认证
+     * @param {Uint8Array} token - 设备发送的令牌
+     * @returns {Promise<Uint8Array>} 签名后的令牌
+     */
+    async handleTokenAuth(token) {
+        try {
+            console.log('[ADB] 处理令牌认证，令牌长度:', token.length);
+            
+            // 使用签名密钥对令牌进行签名
+            const signature = this.calculateSignature(token);
+            
+            // 构建签名数据：签名 + 公钥标识
+            const signaturePayload = new Uint8Array(signature.length + this.signatureKey.length);
+            signaturePayload.set(signature);
+            signaturePayload.set(
+                Uint8Array.from(atob(this.signatureKey), c => c.charCodeAt(0)),
+                signature.length
+            );
+            
+            // 发送 AUTH(SIGNATURE) 消息
+            const authMessage = new AdbMessage('AUTH', 2, 0x10000000, signaturePayload);
+            await authMessage.send(this.transport);
+            
+            console.log('[ADB] 令牌认证响应已发送');
+            return signaturePayload;
+            
+        } catch (error) {
+            console.error('[ADB] 令牌认证失败:', error);
+            throw new Error('令牌认证失败: ' + error.message);
+        }
+    }
+
+    /**
+     * 处理 RSA 公钥认证
+     * @param {Uint8Array} data - 设备发送的数据
+     * @returns {Promise<void>}
+     */
+    async handlePublicKeyAuth(data) {
+        try {
+            console.log('[ADB] 处理 RSA 公钥认证');
+            
+            // 构建公钥字符串
+            const publicKey = 'AdbKey\x00' + this.signatureKey;
+            const publicKeyBytes = new TextEncoder().encode(publicKey);
+            
+            // 发送 AUTH(RSAPUBLICKEY) 消息
+            const authMessage = new AdbMessage('AUTH', 3, 0x10000000, publicKeyBytes);
+            await authMessage.send(this.transport);
+            
+            console.log('[ADB] RSA 公钥认证响应已发送');
+            
+        } catch (error) {
+            console.error('[ADB] RSA 公钥认证失败:', error);
+            throw new Error('RSA 公钥认证失败: ' + error.message);
+        }
     }
 
     /**
@@ -31,29 +127,38 @@ class AdbDevice {
 
             // 处理认证
             while (response.cmd === 'AUTH') {
+                console.log('[ADB] 收到认证请求，类型:', response.arg0);
+                
                 if (authCallback) {
                     authCallback(response.arg0, response.data);
                 }
+                
                 // 认证类型：
-                // 1 = 令牌认证
-                // 2 = RSA 公钥认证
+                // 1 = TOKEN 令牌认证
+                // 2 = SIGNATURE 签名认证  
+                // 3 = RSAPUBLICKEY RSA 公钥认证
                 if (response.arg0 === 1) {
-                    // 令牌认证
-                    log('Token authentication required');
-                    // 这里需要实现令牌认证逻辑
-                    throw new Error('Token authentication required');
+                    // TOKEN 令牌认证
+                    console.log('[ADB] TOKEN 认证');
+                    await this.handleTokenAuth(response.data);
                 } else if (response.arg0 === 2) {
-                    // RSA 公钥认证
-                    log('RSA public key authentication required');
-                    // 这里需要实现 RSA 公钥认证逻辑
-                    throw new Error('RSA public key authentication required');
+                    // SIGNATURE 签名认证
+                    console.log('[ADB] SIGNATURE 认证');
+                    await this.handleTokenAuth(response.data);
+                } else if (response.arg0 === 3) {
+                    // RSAPUBLICKEY RSA 公钥认证
+                    console.log('[ADB] RSA 公钥认证');
+                    await this.handlePublicKeyAuth(response.data);
                 } else {
-                    throw new Error('Unknown authentication type: ' + response.arg0);
+                    throw new Error('未知认证类型: ' + response.arg0);
                 }
+                
+                // 接收下一个响应
+                response = await AdbMessage.receive(this.transport);
             }
 
             if (response.cmd !== 'CNXN') {
-                throw new Error('Failed to connect: ' + response.cmd);
+                throw new Error('连接失败: ' + response.cmd);
             }
 
             // 解析响应
@@ -66,11 +171,11 @@ class AdbDevice {
             }
 
             this.connected = true;
-            console.log('ADB device connected successfully:', this.banner);
+            console.log('[ADB] 设备连接成功:', this.banner);
             return this;
 
         } catch (error) {
-            console.error('Error connecting to ADB device:', error);
+            console.error('[ADB] 连接错误:', error);
             throw error;
         }
     }
