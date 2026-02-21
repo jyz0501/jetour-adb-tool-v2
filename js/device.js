@@ -1,22 +1,8 @@
 // 设备管理模块 - 使用 ya-webadb 简化实现
-// adb 和 webusb 变量在 main.js 中声明
+// adb、webusb 和 log 在 utils.js 中声明
 
-// 日志输出
-let log = (...args) => {
-	if (args[0] instanceof Error) {
-		console.error.apply(console, args);
-	} else {
-		console.log.apply(console, args);
-	}
-	
-	// 检查是否是未连接到设备的消息
-	if (args[0] === "未连接到设备") {
-		$("#log").text("");
-	}
-	
-	// 将日志输出到页面
-	$("#log").text($("#log").text() + args.join(' ') + '\n');
-};
+// 初始化 WebUSB
+let init = async () => {
 
 // 初始化 WebUSB
 let init = async () => {

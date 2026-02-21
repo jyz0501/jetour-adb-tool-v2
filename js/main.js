@@ -1,5 +1,4 @@
-let adb;
-let webusb;
+// adb 和 webusb 变量在 utils.js 中声明
 
 let init = async () => {
 	if(!navigator.usb) {
