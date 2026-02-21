@@ -3,9 +3,6 @@
 
 // 初始化 WebUSB
 let init = async () => {
-
-// 初始化 WebUSB
-let init = async () => {
 	if (!navigator.usb) {
 		log("您的浏览器不支持 WebUSB 功能，请使用 Edge 浏览器");
 		return null;
