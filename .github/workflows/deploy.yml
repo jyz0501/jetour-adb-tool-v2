@@ -28,5 +28,5 @@ jobs:
           TCB_SECRET_KEY: ${{ secrets.TCB_SECRET_KEY }}
           TCB_ENV_ID: python-5grw4lthed1f3e55
         run: |
-          tcb login --key-id $TCB_SECRET_ID --key $TCB_SECRET_KEY
+          tcb login --apiKeyId $TCB_SECRET_ID --apiKey $TCB_SECRET_KEY
           tcb hosting deploy . -e $TCB_ENV_ID
