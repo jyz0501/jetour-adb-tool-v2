@@ -1,41 +1,33 @@
-name: Deploy to GitHub Pages
+name: Deploy to CloudBase
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - master
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
+    
     steps:
-    - uses: actions/checkout@v4
-      
-    - name: Check HTML files
-      run: |
-        echo "Checking HTML files..."
-        find . -name "*.html" -type f | head -10
-        
-    - name: Check CSS files
-      run: |
-        echo "Checking CSS files..."
-        find . -name "*.css" -type f | head -10
-        
-    - name: Check JavaScript files
-      run: |
-        echo "Checking JavaScript files..."
-        find . -name "*.js" -type f | head -10
-        
-    - name: Deploy to GitHub Pages
-      if: github.ref == 'refs/heads/main'
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: .
-        publish_branch: gh-pages
-        force_orphan: true
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install CloudBase CLI
+        run: npm install -g @cloudbase/cli
+
+      - name: Deploy to CloudBase
+        env:
+          TCB_SECRET_ID: ${{ secrets.TCB_SECRET_ID }}
+          TCB_SECRET_KEY: ${{ secrets.TCB_SECRET_KEY }}
+          TCB_ENV_ID: python-5grw4lthed1f3e55
+        run: |
+          tcb login --key-id $TCB_SECRET_ID --key $TCB_SECRET_KEY
+          tcb hosting deploy . -e $TCB_ENV_ID
