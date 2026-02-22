@@ -20,10 +20,66 @@ name: Deploy to CloudBase Static Hosting
 
 ### 2. 获取腾讯云密钥
 
+#### 方式一：使用主账号密钥（推荐，简单）
+
 1. 访问 [腾讯云 API 密钥管理](https://console.cloud.tencent.com/cam/capi)
 2. 点击「新建密钥」或使用现有密钥
 3. 记录 `SecretId` 和 `SecretKey`
 4. 将这两个值分别填入 GitHub Secrets
+
+#### 方式二：使用子账号密钥（需要配置权限）
+
+1. 访问 [腾讯云访问管理](https://console.cloud.tencent.com/cam/user)
+2. 创建或选择子账号
+3. 配置以下权限（**必须包含全部权限**）：
+
+**必要权限**：
+- `tcb:DescribeEnvs` - 查看环境（必需）
+- `tcb:CreateCloudBaseProject` - 创建项目
+- `tcb:DescribeCloudBaseRunVersion` - 查看运行版本
+- `tcb:DescribeCloudBaseRunServers` - 查看服务器
+- `tcb:ModifyCloudBaseRunServerFlowConf` - 修改服务器配置
+- `tcb:DescribeUploadTask` - 查看上传任务
+- `tcb:CreateUploadTask` - 创建上传任务
+- `tcb:CreateHostingDomain` - 创建托管域名
+- `tcb:DescribeDomains` - 查看域名
+- `tcb:ModifyHostingDomain` - 修改托管域名
+- `tcb:DeleteHostingDomain` - 删除托管域名
+- `tcb:DescribeHostingFiles` - 查看托管文件
+- `tcb:ModifyWebsiteStatus` - 修改网站状态
+- `tcb:ModifyWebsitePath` - 修改网站路径
+- `tcb:DescribeHostingConfig` - 查看托管配置
+- `tcb:ModifyWebsiteConfig` - 修改网站配置
+- `tcb:DescribeQuota` - 查看配额
+- `tcb:ModifyQuota` - 修改配额
+- `tcb:CreateCloudBaseRunServerVersion` - 创建运行版本
+- `tcb:DeleteCloudBaseRunServerVersion` - 删除运行版本
+- `tcb:DescribeCloudBaseRunServerVersionList` - 查看运行版本列表
+- `tcb:ModifyCloudBaseRunServerVersion` - 修改运行版本
+- `tcb:CreateCloudBaseRunServerDeployment` - 创建部署
+- `tcb:DescribeCloudBaseRunServerDeployments` - 查看部署
+- `tcb:DeleteCloudBaseRunServerDeployment` - 删除部署
+- `tcb:DeleteCloudBaseRunServer` - 删除服务器
+- `tcb:RollBackCloudBaseRunServerVersion` - 回滚版本
+- `tcb:ModifyCloudBaseRunServer` - 修改服务器
+- `tcb:DescribeCloudBaseRunServerList` - 查看服务器列表
+- `tcb:CreateCloudBaseRunServer` - 创建服务器
+- `tcb:StopCloudBaseRunServer` - 停止服务器
+- `tcb:StartCloudBaseRunServer` - 启动服务器
+- `tcb:DescribeEdgeLog` - 查看边缘日志
+- `tcb:DescribeEdgeOneTask` - 查看边缘任务
+- `tcb:CreateEdgeOneTask` - 创建边缘任务
+- `tcb:DeleteEdgeOneTask` - 删除边缘任务
+
+**配置步骤**：
+1. 访问 [策略管理](https://console.cloud.tencent.com/cam/policy)
+2. 点击「新建自定义策略」
+3. 选择「按策略生成器创建」
+4. 服务选择「云开发 CloudBase」
+5. 勾选上述所有权限
+6. 资源选择「全部资源」或指定环境：`qcs::tcb:*:uin/250406199:envId/python-5grw4lthed1f3e55`
+7. 将策略授权给子账号
+8. 使用子账号的 SecretId 和 SecretKey 填入 GitHub Secrets
 
 ### 3. 触发部署
 
