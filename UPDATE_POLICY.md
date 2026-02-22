@@ -25,8 +25,9 @@ https://console.cloud.tencent.com/cam/policy
   "statement": [
     {
       "action": [
+        "tcb:DescribeEnvList",
+        "tcb:DescribeEnvInfo",
         "tcb:CreateCloudBaseProject",
-        "tcb:DescribeCloudBaseEnvs",
         "tcb:DescribeCloudBaseRunVersion",
         "tcb:DescribeCloudBaseRunServers",
         "tcb:ModifyCloudBaseRunServerFlowConf",
@@ -73,6 +74,8 @@ https://console.cloud.tencent.com/cam/policy
 
 资源限制：仅限 `python-5grw4lthed1f3e55` 环境
 
+**注意**：已将 `tcb:DescribeCloudBaseEnvs` 替换为正确的权限 `tcb:DescribeEnvList` 和 `tcb:DescribeEnvInfo`
+
 #### 选项 B：全部资源（更灵活）
 
 ```json
@@ -81,8 +84,9 @@ https://console.cloud.tencent.com/cam/policy
   "statement": [
     {
       "action": [
+        "tcb:DescribeEnvList",
+        "tcb:DescribeEnvInfo",
         "tcb:CreateCloudBaseProject",
-        "tcb:DescribeCloudBaseEnvs",
         "tcb:DescribeCloudBaseRunVersion",
         "tcb:DescribeCloudBaseRunServers",
         "tcb:ModifyCloudBaseRunServerFlowConf",
@@ -129,6 +133,8 @@ https://console.cloud.tencent.com/cam/policy
 
 资源限制：无限制，可以访问所有 CloudBase 资源
 
+**注意**：已将 `tcb:DescribeCloudBaseEnvs` 替换为正确的权限 `tcb:DescribeEnvList` 和 `tcb:DescribeEnvInfo`
+
 ### 4. 保存策略
 
 1. 给策略命名，例如：`CloudBaseStaticHostingDeploy`
@@ -151,8 +157,9 @@ https://console.cloud.tencent.com/cam/policy
 
 **操作选择**（按住 Shift 多选或逐个勾选）：
 
+✅ `DescribeEnvList` - **这是关键！**
+✅ `DescribeEnvInfo`
 ✅ `CreateCloudBaseProject`
-✅ `DescribeCloudBaseEnvs` - **这是关键！**
 ✅ `DescribeCloudBaseRunVersion`
 ✅ `DescribeCloudBaseRunServers`
 ✅ `ModifyCloudBaseRunServerFlowConf`
@@ -187,6 +194,8 @@ https://console.cloud.tencent.com/cam/policy
 ✅ `DescribeEdgeOneTask`
 ✅ `CreateEdgeOneTask`
 ✅ `DeleteEdgeOneTask`
+
+**注意**：请勿选择 `DescribeCloudBaseEnvs`，该权限不存在。正确的权限是 `DescribeEnvList` 和 `DescribeEnvInfo`。
 
 **资源选择**：
 - 方案 A：`qcs::tcb:*:uin/250406199:envId/python-5grw4lthed1f3e55`（仅限当前环境）

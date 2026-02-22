@@ -3,8 +3,9 @@
   "statement": [
     {
       "action": [
+        "tcb:DescribeEnvList",
+        "tcb:DescribeEnvInfo",
         "tcb:CreateCloudBaseProject",
-        "tcb:DescribeCloudBaseEnvs",
         "tcb:DescribeCloudBaseRunVersion",
         "tcb:DescribeCloudBaseRunServers",
         "tcb:ModifyCloudBaseRunServerFlowConf",
